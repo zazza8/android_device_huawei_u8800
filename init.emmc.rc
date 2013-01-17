@@ -1,0 +1,3 @@
+on emmc-fs
+    mount_all ./fstab.sdcard
+    setprop ro.crypto.fuse_sdcard true
