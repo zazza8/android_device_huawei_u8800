@@ -30,6 +30,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.telephony.cdma.CdmaInformationRecords;
+import com.android.internal.telephony.DataConnection.FailCause;
 
 import java.util.ArrayList;
 
@@ -926,28 +927,32 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
     @Override
     protected Object
     responseSetupDataCall(Parcel p) {
-        int num = p.readInt();
-        if (RILJ_LOGV) riljLog("responseSetupDataCall num=" + num);
+        DataCallState dataCall = new DataCallState();
+        String response[] = (String []) responseStrings(p);
 
-        DataCallState dataCall;
+        if (response.length >= 2)
+        {
+            dataCall = new DataCallState();
+            dataCall.version = 3;
+            dataCall.cid = Integer.parseInt(response[0]);
+            dataCall.ifname = response[1];
+            if (TextUtils.isEmpty(dataCall.ifname)) {
+                throw new RuntimeException(
+                        "RIL_REQUEST_SETUP_DATA_CALL response, no ifname");
+            }
+            String addresses = response[2];
+            if (!TextUtils.isEmpty(addresses)) {
+                dataCall.addresses = addresses.split(" ");
+            }
 
-        dataCall = new DataCallState();
-        dataCall.version = 3;
-        dataCall.cid = Integer.parseInt(p.readString());
-        dataCall.ifname = p.readString();
-        if (TextUtils.isEmpty(dataCall.ifname)) {
-            throw new RuntimeException(
-                    "RIL_REQUEST_SETUP_DATA_CALL response, no ifname");
+            dataCall.dnses = new String[2];
+            dataCall.dnses[0] = SystemProperties.get("net."+dataCall.ifname+".dns1");
+            dataCall.dnses[1] = SystemProperties.get("net."+dataCall.ifname+".dns2");
         }
-        String addresses = p.readString();
-        if (!TextUtils.isEmpty(addresses)) {
-            dataCall.addresses = addresses.split(" ");
+        else
+        {
+            dataCall.status = FailCause.ERROR_UNSPECIFIED.getErrorCode();
         }
-
-        dataCall.dnses = new String[2];
-        dataCall.dnses[0] = SystemProperties.get("net."+dataCall.ifname+".dns1");
-        dataCall.dnses[1] = SystemProperties.get("net."+dataCall.ifname+".dns2");
-
         return dataCall;
     }
 
@@ -966,7 +971,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         }
         // DataCallState needs an ifname. Since we don't have one use the name from the ThrottleService resource (default=rmnet0).
         dataCall.ifname = Resources.getSystem().getString(com.android.internal.R.string.config_datause_iface);
-        
+
         p.readInt(); // RadioTechnology
         p.readInt(); // inactiveReason
 
@@ -977,7 +982,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
     }
 
     // Override since the variable is modified.
-    @Override public void 
+    @Override public void
     getVoiceRadioTechnology(Message result) {
         RILRequest rr = RILRequest.obtain(RIL_REQUEST_VOICE_RADIO_TECH, result);
 
