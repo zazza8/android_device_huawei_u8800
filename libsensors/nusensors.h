@@ -52,8 +52,8 @@ int init_nusensors(hw_module_t const* module, hw_device_t** device);
 /*****************************************************************************/
 
 #define EVENT_TYPE_ACCEL_X          ABS_X
-#define EVENT_TYPE_ACCEL_Y          ABS_Z
-#define EVENT_TYPE_ACCEL_Z          ABS_Y
+#define EVENT_TYPE_ACCEL_Y          ABS_Y
+#define EVENT_TYPE_ACCEL_Z          ABS_Z
 #define EVENT_TYPE_ACCEL_STATUS     ABS_WHEEL
 
 #define EVENT_TYPE_YAW              ABS_RX
@@ -61,30 +61,24 @@ int init_nusensors(hw_module_t const* module, hw_device_t** device);
 #define EVENT_TYPE_ROLL             ABS_RZ
 #define EVENT_TYPE_ORIENT_STATUS    ABS_RUDDER
 
-#define EVENT_TYPE_MAGV_X           ABS_HAT0X
-#define EVENT_TYPE_MAGV_Y           ABS_HAT0Y
-#define EVENT_TYPE_MAGV_Z           ABS_BRAKE
+#define EVENT_TYPE_MAGV_X           ABS_X
+#define EVENT_TYPE_MAGV_Y           ABS_Y
+#define EVENT_TYPE_MAGV_Z           ABS_Z
 
 #define EVENT_TYPE_TEMPERATURE      ABS_THROTTLE
 #define EVENT_TYPE_STEP_COUNT       ABS_GAS
 #define EVENT_TYPE_PROXIMITY        ABS_DISTANCE
 #define EVENT_TYPE_LIGHT            ABS_MISC
 
-// 720 LSG = 1G
-#define LSG                         (720.0f)
+// 1000 LSG = 1G
+#define LSG                         (1000.0f)
 
 
 // conversion of acceleration data to SI units (m/s^2)
 #define CONVERT_A                   (GRAVITY_EARTH / LSG)
-#define CONVERT_A_X                 (-CONVERT_A)
-#define CONVERT_A_Y                 (CONVERT_A)
-#define CONVERT_A_Z                 (-CONVERT_A)
 
 // conversion of magnetic data to uT units
-#define CONVERT_M                   (1.0f/16.0f)
-#define CONVERT_M_X                 (-CONVERT_M)
-#define CONVERT_M_Y                 (-CONVERT_M)
-#define CONVERT_M_Z                 (CONVERT_M)
+#define CONVERT_M                   (1.0f/10.0f)
 
 #define CONVERT_O                   (1.0f)
 #define CONVERT_O_Y                 (CONVERT_O)

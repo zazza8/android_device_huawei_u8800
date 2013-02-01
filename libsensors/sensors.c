@@ -49,6 +49,30 @@ static const struct sensor_t sSensorList[] = {
         105000.0f,
         { }
     },
+    {
+        "LSM303DLH 3-axis Accelerometer",
+        "ST Microelectronics",
+        1,
+        SENSORS_HANDLE_BASE+ID_A,
+        SENSOR_TYPE_ACCELEROMETER,
+        2.0f*GRAVITY_EARTH,
+        (2.0f*GRAVITY_EARTH)/2048.0f,
+        0.5f,
+        1000.0f,
+        { }
+    },
+    {
+        "LSM303DLH Magnetometer",
+        "ST Microelectronics",
+        1,
+        SENSORS_HANDLE_BASE+ID_M,
+        SENSOR_TYPE_MAGNETIC_FIELD,
+        400.0f,
+        0.1f,
+        0.5f,
+        14000.0f,
+        { }
+    },
 };
 
 static int open_sensors(const struct hw_module_t* module, const char* name,

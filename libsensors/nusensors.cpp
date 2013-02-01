@@ -31,6 +31,8 @@
 #include "nusensors.h"
 #include "LightSensor.h"
 #include "ProximitySensor.h"
+#include "AccelSensor.h"
+#include "MagSensor.h"
 
 /*****************************************************************************/
 
@@ -47,6 +49,8 @@ private:
     enum {
         aps_12d_light           = 0,
         aps_12d_proximity,
+        lsm303dlh_acc,
+        lsm303dlh_mag,
         numSensorDrivers,
         numFds,
     };
@@ -63,6 +67,10 @@ private:
                 return aps_12d_light;
             case ID_P:
                 return aps_12d_proximity;
+            case ID_A:
+                return lsm303dlh_acc;
+            case ID_M:
+                return lsm303dlh_mag;
         }
         return -EINVAL;
     }
@@ -81,6 +89,16 @@ sensors_poll_context_t::sensors_poll_context_t()
     mPollFds[aps_12d_proximity].fd = mSensors[aps_12d_proximity]->getFd();
     mPollFds[aps_12d_proximity].events = POLLIN;
     mPollFds[aps_12d_proximity].revents = 0;
+
+    mSensors[lsm303dlh_acc] = new AccelSensor();
+    mPollFds[lsm303dlh_acc].fd = mSensors[lsm303dlh_acc]->getFd();
+    mPollFds[lsm303dlh_acc].events = POLLIN;
+    mPollFds[lsm303dlh_acc].revents = 0;
+
+    mSensors[lsm303dlh_mag] = new MagSensor();
+    mPollFds[lsm303dlh_mag].fd = mSensors[lsm303dlh_mag]->getFd();
+    mPollFds[lsm303dlh_mag].events = POLLIN;
+    mPollFds[lsm303dlh_mag].revents = 0;
 
     int wakeFds[2];
     int result = pipe(wakeFds);
