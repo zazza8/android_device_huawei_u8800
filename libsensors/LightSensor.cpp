@@ -83,6 +83,9 @@ int LightSensor::setDelay(int32_t handle, int64_t ns)
 {
     ALOGD_IF(LIGHT_DEBUG, "LightSensor: setDelay %d %lld", handle, ns);
 
+    if (!mEnabled)
+        return 0;
+
     if (ioctl(dev_fd, APS_IOCTL_SET_LIGHT_DELAY, &ns))
         ALOGE("LightSensor: Failed to set light delay.");
 

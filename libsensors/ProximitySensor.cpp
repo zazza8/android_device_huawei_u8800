@@ -80,6 +80,9 @@ int ProximitySensor::setDelay(int32_t handle, int64_t ns)
 {
     ALOGD_IF(PROX_DEBUG, "ProximitySensor: setDelay %d %lld", handle, ns);
 
+    if (!mEnabled)
+        return 0;
+
     if (ioctl(dev_fd, APS_IOCTL_SET_PROXIMITY_DELAY, &ns))
         ALOGE("ProximitySensor: Failed to set light delay.");
 

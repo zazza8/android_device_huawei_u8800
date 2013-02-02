@@ -83,6 +83,9 @@ int AccelSensor::setDelay(int32_t handle, int64_t ns)
 {
     ALOGD_IF(ACCEL_DEBUG, "AccelSensor: setDelay %d %lld", handle, ns);
 
+    if (!mEnabled)
+        return 0;
+
     int ms = ns / 1000000;
 
     if (ioctl(dev_fd, LSM303DLH_ACC_IOCTL_SET_DELAY, &ms))
