@@ -18,7 +18,9 @@
 # Used by Android.mk and keyboards.mk.
 
 keylayouts := \
-	7k_handset.kl
+	7k_handset.kl \
+	atmel_mxt_ts.kl \
+	sensor00fn11.kl
 
 keycharmaps := #\
 #	Generic.kcm \
@@ -26,6 +28,6 @@ keycharmaps := #\
 #	qwerty.kcm \
 #	qwerty2.kcm
 
-keyconfigs := #\
-#	atmel_mxt_ts.idc \
-#	sensor00fn11.idc
+keyconfigs := \
+	atmel_mxt_ts.idc \
+	sensor00fn11.idc
