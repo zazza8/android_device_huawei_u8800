@@ -21,7 +21,6 @@
 # we use the camera stub when the vendor tree isn't present, and
 # the true camera library when the vendor tree is available.
 USE_CAMERA_STUB := true
-BOARD_USES_GENERIC_AUDIO := true
 
 # Inherit from the proprietary version if exists
 -include vendor/huawei/u8800/BoardConfigVendor.mk

@@ -56,6 +56,10 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/fstab.sdcard:root/fstab.sdcard \
 	$(LOCAL_PATH)/vold.fstab:system/etc/vold.fstab
 
+# Audio
+PRODUCT_COPY_FILES += \
+	$(LOCAL_PATH)/audio_policy.conf:system/etc/audio_policy.conf
+
 # Graphics
 PRODUCT_PACKAGES += \
 	libgenlock \
@@ -64,8 +68,14 @@ PRODUCT_PACKAGES += \
 	libqdutils \
 	libtilerenderer
 
+# Audio
+PRODUCT_PACKAGES += \
+	libaudioutils
+
 # HAL
 PRODUCT_PACKAGES += \
+	audio.primary.msm7x30 \
+	audio_policy.msm7x30 \
 	copybit.msm7x30 \
 	gralloc.msm7x30 \
 	hwcomposer.msm7x30 \
@@ -82,6 +92,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.sf.lcd_density=240
+
+# Audio
+PRODUCT_PROPERTY_OVERRIDES += \
+	lpa.decode=true \
+	use.non-omx.mp3.decoder=true
 
 # Graphics
 PRODUCT_PROPERTY_OVERRIDES += \
