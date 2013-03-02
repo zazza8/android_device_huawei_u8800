@@ -79,6 +79,7 @@ PRODUCT_PACKAGES += \
 	copybit.msm7x30 \
 	gralloc.msm7x30 \
 	hwcomposer.msm7x30 \
+	lights.msm7x30 \
 	power.qcom \
 	sensors.u8800
 

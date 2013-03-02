@@ -52,6 +52,8 @@ TARGET_USES_ION := true
 TARGET_USES_C2D_COMPOSITION := true
 BOARD_EGL_CFG := device/huawei/u8800/egl.cfg
 
+TARGET_PROVIDES_LIBLIGHT := true
+
 # We don't build bootloader nor radio.
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
