@@ -70,6 +70,14 @@ PRODUCT_PACKAGES += \
 	libqdutils \
 	libtilerenderer
 
+# OMX
+PRODUCT_PACKAGES += \
+	libstagefrighthw \
+	libmm-omxcore \
+	libOmxCore \
+	libOmxVdec \
+	libOmxVenc
+
 # Audio
 PRODUCT_PACKAGES += \
 	libaudioutils
