@@ -25,8 +25,6 @@ USE_CAMERA_STUB := true
 # Inherit from the proprietary version if exists
 -include vendor/huawei/u8800/BoardConfigVendor.mk
 
-TARGET_SPECIFIC_HEADER_PATH := device/huawei/u8800/include
-
 TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
 TAGET_ARCH_VARIANT_CPU := cortex-a8
