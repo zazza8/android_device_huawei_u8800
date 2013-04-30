@@ -41,7 +41,8 @@ PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
 	frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
 	frameworks/native/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
-	frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml
+	frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+	frameworks/native/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml
 
 # Init scripts
 PRODUCT_COPY_FILES += \
@@ -91,7 +92,8 @@ PRODUCT_PACKAGES += \
 	hwcomposer.msm7x30 \
 	lights.msm7x30 \
 	power.qcom \
-	sensors.u8800
+	sensors.u8800 \
+	gps.u8800
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
