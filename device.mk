@@ -119,7 +119,3 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.opengles.version=131072
-
-# Workaround for MDP underrun issue with 4-layer composition
-PRODUCT_PROPERTY_OVERRIDES += \
-	debug.mdpcomp.maxlayer=3
