@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-# If the library is needed to be linked to some other binary, please use "-" in 
+# If the library is needed to be linked to some other binary, please use "-" in
 # front of the library.
 
 # Audio

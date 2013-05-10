@@ -58,7 +58,7 @@ do
 	# Remove the "-".
 	file=${file:1}
 
-	# We have to put the correct line ending, depending on if we had a file 
+	# We have to put the correct line ending, depending on if we had a file
 	# previously.
 	if [[ $wasfile == true ]]; then
 		echo " \\" >> $MAKEFILE
@@ -83,7 +83,7 @@ do
 		file=${file:1}
 	fi
 
-	# We have to put the correct line ending, depending on if we had a file 
+	# We have to put the correct line ending, depending on if we had a file
 	# previously.
 	if [[ $wasfile == true ]]; then
 		echo " \\" >> $MAKEFILE
