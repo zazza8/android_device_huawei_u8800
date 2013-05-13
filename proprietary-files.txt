@@ -17,9 +17,6 @@
 # If the library is needed to be linked to some other binary, please use "-" in
 # front of the library.
 
-# Audio
--lib/libaudioalsa.so
-
 # RMT Storage Server
 bin/rmt_storage
 

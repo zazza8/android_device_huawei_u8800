@@ -16,14 +16,15 @@
 # limitations under the License.
 #
 
-# This script checks if there is a device to pull from, downloads the files to 
-# their corresponding directories in $BASE. After downloading it gives the 
+# This script checks if there is a device to pull from, downloads the files to
+# their corresponding directories in $BASE. After downloading it gives the
 # correct permissions to libraries and binaries.
 
 # Assign vendor names used in directories.
 VENDOR=huawei
 DEVICE=u8800
-BASE=../../../vendor/$VENDOR/$DEVICE/proprietary/pulled
+VENDOR_BASE=../../../vendor/$VENDOR/$DEVICE/proprietary
+BASE=$VENDOR_BASE/pulled
 PULL_BASE=system
 
 # Global array used for pulling files.
@@ -130,21 +131,16 @@ echo "Setting correct permissions..."
 
 # Give newline char as splitter.
 IFS=$'\n'
-# Only chmod if we have the directory (and files).
-if [[ -d "$BASE/lib" ]]; then
-	for library in $(find $BASE/lib -type f -name *.so); do
-		echo -e "\e[00;32mSetting permission 644 on "$(basename $library)"\e[00m"
-		chmod 644 $library
-	done
-fi
 
-# Only chmod if we have the directory (and files).
-if [[ -d "$BASE/bin" ]]; then
-	for binary in $(find $BASE/bin -type f); do
-		echo -e "\e[00;32mSetting permission 755 on "$(basename $binary)"\e[00m"
-		chmod 755 $binary
-	done
-fi
+for files in $(find $VENDOR_BASE -type f); do
+	echo -e "\e[00;32mSetting permission 644 on "$(basename $files)"\e[00m"
+	chmod 644 $files
+done
+
+for binary in $(find $VENDOR_BASE/*/bin -type f); do
+	echo -e "\e[00;32mSetting permission 755 on "$(basename $binary)"\e[00m"
+	chmod 755 $binary
+done
 
 # Revert back to original IFS.
 IFS="$OLD_IFS"
