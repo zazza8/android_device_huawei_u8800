@@ -101,6 +101,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	e2fsck
 
+# Additional packages
+PRODUCT_PACKAGES += \
+	DeviceSettings
+
 # Allow emulated sdcard on /data/media
 PRODUCT_PROPERTY_OVERRIDES += \
 	persist.fuse_sdcard=true
@@ -111,7 +115,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Audio
 PRODUCT_PROPERTY_OVERRIDES += \
 	lpa.decode=true \
-	use.non-omx.mp3.decoder=true
+	use.non-omx.mp3.decoder=true \
+	ro.hs_intmic.supported=1
 
 # Graphics
 PRODUCT_PROPERTY_OVERRIDES += \

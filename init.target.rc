@@ -38,6 +38,10 @@ on boot
     # 7630 target supports Warmboot capability
     setprop ro.warmboot.capability 1
 
+on init
+    # Device Settings
+    chown system system /sys/devices/platform/msm_otg/mode
+
 on property:hw.keyboard.disable=1
     write  /sys/bus/platform/devices/pm8058-keypad/disable_kp 1
 

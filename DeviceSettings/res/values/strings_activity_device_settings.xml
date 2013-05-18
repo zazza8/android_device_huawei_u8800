@@ -1,0 +1,17 @@
+<resources>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Settings for USB -->
+    <string name="pref_header_usb">USB</string>
+
+    <string name="pref_title_host">USB host</string>
+    <string name="pref_title_host_off">Peripheral</string>
+    <string name="pref_title_host_on">Host</string>
+
+    <!-- Settings for Headset -->
+    <string name="pref_header_headset">Headset</string>
+    <string name="pref_title_internalmic">Force internal microphone</string>
+    <string name="pref_title_internalmic_off">Headset microphone</string>
+    <string name="pref_title_internalmic_on">Internal microphone</string>
+</resources>
