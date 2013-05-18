@@ -14,12 +14,14 @@
 
 package com.cyanogenmod.settings.device;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
+import android.view.MenuItem;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings.
@@ -44,6 +46,9 @@ public class DeviceSettings extends PreferenceActivity
 
         appContext = this;
 
+        final ActionBar actionBar = getActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
+
         // Add 'general' preferences.
         addPreferencesFromResource(R.xml.pref_general);
 
@@ -62,6 +67,16 @@ public class DeviceSettings extends PreferenceActivity
         getPreferenceScreen().addPreference(fakeHeader);
         addPreferencesFromResource(R.xml.pref_headset);
         findPreference(AUDIO_INTERNALMIC_STATE).setEnabled(AudioSettings.isInternalmicForcedSupported());
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
