@@ -14,6 +14,7 @@
 
 package com.cyanogenmod.settings.device;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
@@ -35,9 +36,13 @@ public class DeviceSettings extends PreferenceActivity
     public static final String USB_MODE_STATE = "usb_mode_state";
     public static final String AUDIO_INTERNALMIC_STATE = "audio_internalmic_state";
 
+    public static Context appContext;
+
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+
+        appContext = this;
 
         // Add 'general' preferences.
         addPreferencesFromResource(R.xml.pref_general);
@@ -56,7 +61,7 @@ public class DeviceSettings extends PreferenceActivity
         fakeHeader.setTitle(R.string.pref_header_headset);
         getPreferenceScreen().addPreference(fakeHeader);
         addPreferencesFromResource(R.xml.pref_headset);
-        findPreference(AUDIO_INTERNALMIC_STATE).setEnabled(AudioSettings.isInternalmicForcedSupported(this));
+        findPreference(AUDIO_INTERNALMIC_STATE).setEnabled(AudioSettings.isInternalmicForcedSupported());
     }
 
     @Override

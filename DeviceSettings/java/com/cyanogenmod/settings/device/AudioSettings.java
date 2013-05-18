@@ -15,7 +15,9 @@
 package com.cyanogenmod.settings.device;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.SystemProperties;
+import android.widget.Toast;
 
 public class AudioSettings {
     private static final String AUDIO_HS_INTMIC_SUPPORTED_PROP = "ro.hs_intmic.supported";
@@ -24,7 +26,7 @@ public class AudioSettings {
     private static final Integer DISABLED = 0;
     private static final Integer ENABLED = 1;
 
-    public static boolean isInternalmicForcedSupported(Context context) {
+    public static boolean isInternalmicForcedSupported() {
         Integer value = SystemProperties.getInt(AUDIO_HS_INTMIC_SUPPORTED_PROP, DISABLED);
 
         if (value == DISABLED)
@@ -37,5 +39,17 @@ public class AudioSettings {
 
     public static void writeInternalmicForced(boolean forced) {
         SystemProperties.set(AUDIO_HS_INTMIC_FORCED_PROP, forced ? ENABLED.toString() : DISABLED.toString());
+
+        /* On startup we don't have the context. */
+        if (DeviceSettings.appContext != null) {
+            AudioManager audioManager = (AudioManager) DeviceSettings.appContext.getSystemService(Context.AUDIO_SERVICE);
+
+            /* Need to reset the routing process. */
+            if (audioManager.isWiredHeadsetOn()) {
+                Context appContext = DeviceSettings.appContext;
+                Toast.makeText(appContext, appContext.getResources().getString(R.string.toast_replug_headset),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

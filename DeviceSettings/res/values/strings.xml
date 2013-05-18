@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DeviceSettings</string>
+    <string name="toast_replug_headset">Please replug headset.</string>
 </resources>
