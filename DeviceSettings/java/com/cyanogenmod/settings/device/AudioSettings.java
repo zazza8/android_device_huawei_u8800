@@ -21,7 +21,7 @@ import android.widget.Toast;
 
 public class AudioSettings {
     private static final String AUDIO_HS_INTMIC_SUPPORTED_PROP = "ro.hs_intmic.supported";
-    private static final String AUDIO_HS_INTMIC_FORCED_PROP = "service.audio.hs_intmic";
+    private static final String AUDIO_HS_INTMIC_FORCED_PROP = "persist.service.audio.hs_intmic";
 
     private static final Integer DISABLED = 0;
     private static final Integer ENABLED = 1;
