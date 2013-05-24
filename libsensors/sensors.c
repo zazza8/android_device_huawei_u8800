@@ -32,7 +32,7 @@ static const struct sensor_t sSensorList[] = {
         SENSORS_HANDLE_BASE+ID_L,
         SENSOR_TYPE_LIGHT,
         64000.0f,
-        0.24f,
+        1.0f,
         0.07f,
         52500.0f,
         { }

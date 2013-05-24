@@ -144,16 +144,16 @@ int LightSensor::readEvents(sensors_event_t* data, int count)
     return numEventReceived;
 }
 
-float LightSensor::getLuxValue(size_t adc_count)
+float LightSensor::getLuxValue(uint16_t adc_count)
 {
-    float correct_adc = getCorrectADC(adc_count);
+    float correct_adc = getCorrectADC(adc_count) * GLASS_MULTIPLIER;
 
     configureRange(adc_count);
 
-    return roundf(correct_adc * ALS_LUX_TIMES_INDEX);
+    return roundf(correct_adc);
 }
 
-float LightSensor::getCorrectADC(size_t adc_count)
+float LightSensor::getCorrectADC(uint16_t adc_count)
 {
     float countValue;
 
@@ -187,7 +187,7 @@ float LightSensor::getCorrectADC(size_t adc_count)
 }
 
 /* Do this only on brightness ADC. */
-void LightSensor::configureRange(size_t adc_count)
+void LightSensor::configureRange(uint16_t adc_count)
 {
     if (!settings.allow_reconfig)
         return;

@@ -141,28 +141,23 @@ int ProximitySensor::readEvents(sensors_event_t* data, int count)
     return numEventReceived;
 }
 
-float ProximitySensor::getProxValue(size_t adc_count)
+float ProximitySensor::getProxValue(uint16_t adc_count)
 {
-    float correct_adc = getCorrectADC(adc_count);
-
-    static bool is_close = false;
-
-    /* The values get unstable when the light changes. */
-    if (correct_adc > PROX_UNSTABLE_VALUE)
-        return is_close;
+    float correct_adc = getCorrectADC(adc_count) * GLASS_MULTIPLIER;
+    float distance = 1.0f;
 
     /* Proximity sensing algorithm described in Intersil datasheet.
      * This algorithm has low and high thresholds, which are used to figure out
      * whether the object is near or far. */
-    if (correct_adc <= PROX_LOW_THRESHOLD)
-        is_close = false;
-    else if (correct_adc >= PROX_HIGH_THRESHOLD)
-        is_close = true;
+    if (correct_adc >= PROX_3CM_HIGH_THRESHOLD)
+        distance = 0.0f;
+    else if (correct_adc <= PROX_3CM_LOW_THRESHOLD)
+        distance = 1.0f;
 
-    return is_close ? 0.0f : 1.0f;
+    return distance;
 }
 
-float ProximitySensor::getCorrectADC(size_t adc_count)
+float ProximitySensor::getCorrectADC(uint16_t adc_count)
 {
     float countValue;
 
@@ -193,30 +188,4 @@ float ProximitySensor::getCorrectADC(size_t adc_count)
     }
 
     return adc_count * countValue;
-}
-
-/* Do this only on brightness ADC. */
-void ProximitySensor::configureRange(size_t adc_count)
-{
-    if (!settings.allow_reconfig)
-        return;
-
-    bool increase;
-
-    if (adc_count <= RANGE_DEC_THRESHOLD)
-        increase = false;
-    else if (adc_count >= RANGE_INC_THRESHOLD)
-        increase = true;
-    else
-        return;
-
-    if (increase && settings.range != APS_12D_RANGE_15P36_TO_64000)
-        settings.range = static_cast<aps_12d_range>(settings.range + 1);
-    else if (!increase && settings.range != APS_12D_RANGE_0P24_TO_1000)
-        settings.range = static_cast<aps_12d_range>(settings.range - 1);
-    else
-        return;
-
-    if (ioctl(dev_fd, APS_IOCTL_SET_SETTINGS, &settings))
-        ALOGE("ProximitySensor: Failed to set settings");
 }

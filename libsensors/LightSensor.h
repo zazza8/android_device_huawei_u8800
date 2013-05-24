@@ -38,9 +38,9 @@ private:
     bool mHasPendingEvent;
     sensors_event_t mPendingEvent;
 
-    float getLuxValue(size_t adc_count);
-    float getCorrectADC(size_t adc_count);
-    void configureRange(size_t adc_count);
+    float getLuxValue(uint16_t adc_count);
+    float getCorrectADC(uint16_t adc_count);
+    void configureRange(uint16_t adc_count);
     struct aps_12d_settings settings;
 public:
             LightSensor();

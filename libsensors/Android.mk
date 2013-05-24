@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-
 LOCAL_PATH := $(call my-dir)
 
 # HAL module implementation, stored in
@@ -28,18 +27,18 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_MODULE_TAGS := optional
 
 LOCAL_CFLAGS := -DLOG_TAG=\"Sensors\"
-LOCAL_SRC_FILES :=			\
-	sensors.c 				\
-	nusensors.cpp 			\
-	InputEventReader.cpp	\
-	SensorBase.cpp			\
-	LightSensor.cpp			\
-	ProximitySensor.cpp		\
-	AccelSensor.cpp			\
-	MagSensor.cpp
+LOCAL_SRC_FILES :=          \
+    sensors.c               \
+    nusensors.cpp           \
+    InputEventReader.cpp    \
+    SensorBase.cpp          \
+    LightSensor.cpp         \
+    ProximitySensor.cpp     \
+    AccelSensor.cpp         \
+    MagSensor.cpp
 
 LOCAL_C_INCLUDES := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
-LOCAL_ADDITIONAL_DEPENDENCIES :=$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_ADDITIONAL_DEPENDENCIES := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 

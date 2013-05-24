@@ -22,20 +22,18 @@
 #define APS_12D_NAME            "aps-12d"
 #define APS_12D_DEVICE          "/dev/" APS_12D_NAME
 
-/* All the light don't reach the sensor. */
-#define ALS_LUX_TIMES_INDEX 1
+/* All the light don't reach the sensor.
+ * U8800 has darkened glass hiding the sensor. */
+#define GLASS_MULTIPLIER        2.77f
 
 /* Increase/decrease range if needed.
  * This should only be modified based on the light ADC values. */
-#define RANGE_DEC_THRESHOLD 10
-#define RANGE_INC_THRESHOLD 4000
+#define RANGE_DEC_THRESHOLD     10
+#define RANGE_INC_THRESHOLD     4000
 
-/* The threshold to start reporting near (calculated ADC value). */
-#define PROX_LOW_THRESHOLD 15
-#define PROX_HIGH_THRESHOLD 20
-
-/* The value which is considered unstable (calculated ADC value). */
-#define PROX_UNSTABLE_VALUE 40
+/* Values after converting the range. */
+#define PROX_3CM_HIGH_THRESHOLD 40
+#define PROX_3CM_LOW_THRESHOLD  25
 
 /*****************************************************************************/
 

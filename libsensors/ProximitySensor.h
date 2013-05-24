@@ -38,9 +38,8 @@ private:
     bool mHasPendingEvent;
     sensors_event_t mPendingEvent;
 
-    float getProxValue(size_t adc_count);
-    float getCorrectADC(size_t adc_count);
-    void configureRange(size_t adc_count);
+    float getProxValue(uint16_t adc_count);
+    float getCorrectADC(uint16_t adc_count);
     struct aps_12d_settings settings;
 public:
             ProximitySensor();
