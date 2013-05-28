@@ -17,11 +17,11 @@
 rootscripts := \
 	init.qcom.class_main.sh
 
-#etcscripts := \
-#	init.qcom.bt.sh
+etcscripts := \
+	init.qcom.efs.sync.sh
 
 PRODUCT_COPY_FILES += $(foreach file,$(rootscripts),\
 	$(LOCAL_PATH)/$(file):root/$(file))
 
-#PRODUCT_COPY_FILES += $(foreach file,$(etcscripts),\
-#	$(LOCAL_PATH)/$(file):system/etc/$(file))
+PRODUCT_COPY_FILES += $(foreach file,$(etcscripts),\
+	$(LOCAL_PATH)/$(file):system/etc/$(file))
