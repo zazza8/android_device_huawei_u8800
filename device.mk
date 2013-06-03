@@ -71,7 +71,8 @@ PRODUCT_PACKAGES += \
 	libmemalloc \
 	liboverlay \
 	libqdutils \
-	libtilerenderer
+	libtilerenderer \
+	libI420colorconvert
 
 # OMX
 PRODUCT_PACKAGES += \
@@ -120,9 +121,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Graphics
 PRODUCT_PROPERTY_OVERRIDES += \
-	debug.composition.type=gpu \
+	debug.sf.hw=1 \
 	debug.egl.hw=1 \
-	debug.sf.hw=1
+	debug.composition.type=dyn \
+	persist.hwc.mdpcomp.enable=true \
+	debug.mdpcomp.logs=0
 
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.opengles.version=131072
