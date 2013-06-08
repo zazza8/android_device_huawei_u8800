@@ -50,6 +50,7 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/init.emmc.rc:root/init.emmc.rc \
 	$(LOCAL_PATH)/init.qcom.rc:root/init.qcom.rc \
+	$(LOCAL_PATH)/init.qcom.usb.rc:root/init.qcom.usb.rc \
 	$(LOCAL_PATH)/init.target.rc:root/init.target.rc \
 	$(LOCAL_PATH)/ueventd.qcom.rc:root/ueventd.qcom.rc
 
