@@ -125,11 +125,11 @@ int MagSensor::readEvents(sensors_event_t* data, int count)
         if (type == EV_ABS)
         {
             if (event->code == EVENT_TYPE_MAGV_X)
-                mPendingEvent.magnetic.x = event->value * CONVERT_M;
+                mPendingEvent.magnetic.x = getCorrectReading(event->code, event->value);
             else if (event->code == EVENT_TYPE_MAGV_Y)
-                mPendingEvent.magnetic.y = event->value * CONVERT_M;
+                mPendingEvent.magnetic.y = getCorrectReading(event->code, event->value);
             else if (event->code == EVENT_TYPE_MAGV_Z)
-                mPendingEvent.magnetic.z = event->value * CONVERT_M;
+                mPendingEvent.magnetic.z = getCorrectReading(event->code, event->value);
         }
         else if (type == EV_SYN)
         {
@@ -148,4 +148,24 @@ int MagSensor::readEvents(sensors_event_t* data, int count)
     }
 
     return numEventReceived;
+}
+
+#define MIN_X (-356)
+#define MAX_X (575)
+#define MIN_Y (-34)
+#define MAX_Y (965)
+#define MIN_Z (-253)
+#define MAX_Z (809)
+
+float MagSensor::getCorrectReading(int code, int value)
+{
+    // Shift to zero.
+    if (code == EVENT_TYPE_MAGV_X)
+        value = value - ((MIN_X + MAX_X) / 2);
+    else if (code == EVENT_TYPE_MAGV_Y)
+        value = value - ((MIN_Y + MAX_Y) / 2);
+    else if (code == EVENT_TYPE_MAGV_Z)
+        value = value - ((MIN_Z + MAX_Z) / 2);
+
+    return value * CONVERT_M;
 }

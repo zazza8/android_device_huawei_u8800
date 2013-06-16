@@ -42,6 +42,8 @@ private:
     bool mHasPendingEvent;
     sensors_event_t mPendingEvent;
 
+    float getCorrectReading(int code, int value);
+
 public:
             MagSensor();
     virtual ~MagSensor();
