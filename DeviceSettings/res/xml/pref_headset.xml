@@ -2,9 +2,8 @@
 
     <CheckBoxPreference
         android:key="audio_internalmic_state"
-        android:title="@string/pref_title_internalmic"
+        android:title="@string/pref_internalmic_title"
         android:defaultValue="false"
-        android:summaryOff="@string/pref_title_internalmic_off"
-        android:summaryOn="@string/pref_title_internalmic_on"/>
+        android:summary="@string/pref_internalmic_summary" />
 
 </PreferenceScreen>

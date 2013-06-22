@@ -2,9 +2,8 @@
 
     <SwitchPreference
         android:key="usb_mode_state"
-        android:title="@string/pref_title_host"
+        android:title="@string/pref_host_title"
         android:defaultValue="false"
-        android:summaryOff="@string/pref_title_host_off"
-        android:summaryOn="@string/pref_title_host_on"/>
+        android:summary="@string/pref_host_summary" />
 
 </PreferenceScreen>

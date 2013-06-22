@@ -5,13 +5,12 @@
     <!-- Settings for USB -->
     <string name="pref_header_usb">USB</string>
 
-    <string name="pref_title_host">USB host</string>
-    <string name="pref_title_host_off">Peripheral</string>
-    <string name="pref_title_host_on">Host</string>
+    <string name="pref_host_title">USB host</string>
+    <string name="pref_host_summary">Control USB host/peripheral mode</string>
 
     <!-- Settings for Headset -->
     <string name="pref_header_headset">Headset</string>
-    <string name="pref_title_internalmic">Force internal microphone</string>
-    <string name="pref_title_internalmic_off">Headset microphone</string>
-    <string name="pref_title_internalmic_on">Internal microphone</string>
+
+    <string name="pref_internalmic_title">Force internal microphone</string>
+    <string name="pref_internalmic_summary">Force internal microphone when headset is connected</string>
 </resources>
