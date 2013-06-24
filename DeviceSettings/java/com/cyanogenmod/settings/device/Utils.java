@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 public class Utils {
-    private static final String TAG = "DeviceSettings_Utils";
+    private static final String LOG_TAG = "DeviceSettings_Utils";
 
     public static boolean fileExists(String filename) {
         return new File(filename).exists();
@@ -33,14 +33,14 @@ public class Utils {
             fos.write(value.getBytes());
             fos.flush();
         } catch (Exception ex) {
-            Log.w(TAG, "Exception: " + ex);
+            Log.w(LOG_TAG, "Exception: " + ex);
         } finally {
             if (fos != null) {
                 try {
-                    Log.w(TAG, "file " + filename + ": " + value);
+                    Log.d(LOG_TAG, "file " + filename + ": " + value);
                     fos.close();
                 } catch (Exception ex) {
-                    Log.w(TAG, "Exception: " + ex);
+                    Log.w(LOG_TAG, "Exception: " + ex);
                 }
             }
         }

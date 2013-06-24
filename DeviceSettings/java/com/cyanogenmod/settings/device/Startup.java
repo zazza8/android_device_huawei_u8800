@@ -19,10 +19,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class Startup extends BroadcastReceiver {
+    private static final String LOG_TAG = "DeviceSettings_Startup";
+
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d(LOG_TAG, "Restoring preferences");
         restore(context);
     }
 
@@ -31,8 +35,10 @@ public class Startup extends BroadcastReceiver {
      */
     public static void restore(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Boolean value;
 
+        DeviceSettings.setVariables(context);
+
+        Boolean value;
         /**
          * No need to write the host setting when the default value is set (peripheral).
          */
@@ -41,6 +47,9 @@ public class Startup extends BroadcastReceiver {
             USBSettings.writeMode(value);
 
         value = prefs.getBoolean(DeviceSettings.AUDIO_INTERNALMIC_STATE, false);
-        AudioSettings.writeInternalmicForced(value);
+        AudioSettings.writeInternalmicForced(context, value);
+
+        int voltage = prefs.getInt(DeviceSettings.VIBRATOR_INTENSITY, VibratorSettings.DEF_VALUE);
+        VibratorSettings.writeVoltage(voltage);
     }
 }

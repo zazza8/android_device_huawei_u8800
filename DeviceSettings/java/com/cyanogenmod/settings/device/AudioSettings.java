@@ -37,19 +37,15 @@ public class AudioSettings {
         return false;
     }
 
-    public static void writeInternalmicForced(boolean forced) {
+    public static void writeInternalmicForced(Context context, boolean forced) {
         SystemProperties.set(AUDIO_HS_INTMIC_FORCED_PROP, forced ? ENABLED.toString() : DISABLED.toString());
 
-        /* On startup we don't have the context. */
-        if (DeviceSettings.appContext != null) {
-            AudioManager audioManager = (AudioManager) DeviceSettings.appContext.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
-            /* Need to reset the routing process. */
-            if (audioManager.isWiredHeadsetOn()) {
-                Context appContext = DeviceSettings.appContext;
-                Toast.makeText(appContext, appContext.getResources().getString(R.string.toast_replug_headset),
-                        Toast.LENGTH_SHORT).show();
-            }
+        /* Need to reset the routing process. */
+        if (audioManager.isWiredHeadsetOn()) {
+            Toast.makeText(context, context.getResources().getString(R.string.toast_replug_headset),
+                    Toast.LENGTH_SHORT).show();
         }
     }
 }

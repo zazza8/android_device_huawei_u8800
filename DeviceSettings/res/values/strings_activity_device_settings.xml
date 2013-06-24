@@ -2,6 +2,11 @@
 
     <!-- Strings related to Settings -->
 
+    <!-- Settings for General -->
+
+    <string name="pref_vibrator_title">Vibration strength</string>
+    <string name="pref_vibrator_summary">Current voltage: %d mV</string>
+
     <!-- Settings for USB -->
     <string name="pref_header_usb">USB</string>
 

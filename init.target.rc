@@ -41,6 +41,7 @@ on boot
 on init
     # Device Settings
     chown system system /sys/devices/platform/msm_otg/mode
+    chown system system /sys/class/timed_output/vibrator/voltage_level
 
 on property:hw.keyboard.disable=1
     write  /sys/bus/platform/devices/pm8058-keypad/disable_kp 1

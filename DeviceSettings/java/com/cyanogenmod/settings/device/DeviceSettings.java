@@ -18,6 +18,7 @@ import android.app.ActionBar;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
@@ -37,20 +38,30 @@ public class DeviceSettings extends PreferenceActivity
 
     public static final String USB_MODE_STATE = "usb_mode_state";
     public static final String AUDIO_INTERNALMIC_STATE = "audio_internalmic_state";
+    public static final String VIBRATOR_INTENSITY = "vibrator_intensity";
 
-    public static Context appContext;
+    public static void setVariables(Context context) {
+        Resources res = context.getResources();
+        VibratorSettings.DEF_VALUE = Integer.valueOf(res.getString(R.string.vib_def_voltage));
+        VibratorSettings.MIN_VALUE = Integer.valueOf(res.getString(R.string.vib_min_voltage));
+        VibratorSettings.MAX_VALUE = Integer.valueOf(res.getString(R.string.vib_max_voltage));
+    }
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
 
-        appContext = this;
+        setVariables(this);
 
         final ActionBar actionBar = getActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         // Add 'general' preferences.
         addPreferencesFromResource(R.xml.pref_general);
+        findPreference(VIBRATOR_INTENSITY).setEnabled(VibratorSettings.isVoltageSupported());
+        String summary = String.format(getString(R.string.pref_vibrator_summary),
+                getPreferenceScreen().getSharedPreferences().getInt(VIBRATOR_INTENSITY, 3000));
+        findPreference(VIBRATOR_INTENSITY).setSummary(summary);
 
         PreferenceCategory fakeHeader;
 
@@ -98,6 +109,13 @@ public class DeviceSettings extends PreferenceActivity
         if (s.equals(USB_MODE_STATE))
             USBSettings.writeMode(sharedPreferences.getBoolean(USB_MODE_STATE, false));
         else if (s.equals(AUDIO_INTERNALMIC_STATE))
-            AudioSettings.writeInternalmicForced(sharedPreferences.getBoolean(AUDIO_INTERNALMIC_STATE, false));
+            AudioSettings.writeInternalmicForced(this, sharedPreferences.getBoolean(AUDIO_INTERNALMIC_STATE, false));
+        else if (s.equals(VIBRATOR_INTENSITY)) {
+            int voltage = sharedPreferences.getInt(DeviceSettings.VIBRATOR_INTENSITY, VibratorSettings.DEF_VALUE);
+            String summary = String.format(getString(R.string.pref_vibrator_summary), voltage);
+
+            findPreference(VIBRATOR_INTENSITY).setSummary(summary);
+            VibratorSettings.writeVoltage(voltage);
+        }
     }
 }
