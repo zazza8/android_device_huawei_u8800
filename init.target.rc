@@ -54,6 +54,10 @@ on property:sys.radio.shutdown=true
    user root
    group root
 
+# SDC3 (SDIO) needs to have polling enabled
+on property:wlan.driver.status=loading
+    write /sys/devices/platform/msm_sdcc.3/polling 1
+
 service hwmac /system/bin/hwmac
     class main
     oneshot

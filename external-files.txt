@@ -58,3 +58,13 @@ etc/firmware/vidc_720p_h264_enc_mc.fw
 etc/firmware/vidc_720p_mp4_dec_mc.fw
 etc/firmware/vidc_720p_mp4_enc_mc.fw
 etc/firmware/vidc_720p_vc1_dec_mc.fw
+
+# Wi-Fi Firmware
+etc/firmware/wlan/cfg.dat
+etc/firmware/wlan/qcom_cfg.ini
+etc/firmware/wlan/qcom_fw.bin
+etc/firmware/wlan/qcom_wapi_fw.bin
+etc/firmware/wlan/qcom_wlan_nv.bin
+
+# Wi-Fi Module
+lib/modules/wlan.ko
