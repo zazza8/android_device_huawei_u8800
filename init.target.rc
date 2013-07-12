@@ -53,3 +53,11 @@ on property:sys.radio.shutdown=true
    exec /system/bin/sh /system/etc/init.qcom.efs.sync.sh
    user root
    group root
+
+service hwmac /system/bin/hwmac
+    class main
+    oneshot
+
+# Reload the MAC address
+on property:wlan.driver.status=unloaded
+    start hwmac

@@ -107,6 +107,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	DeviceSettings
 
+# Hardware MAC address tool
+PRODUCT_PACKAGES += \
+	hwmac
+
 # Allow emulated sdcard on /data/media
 PRODUCT_PROPERTY_OVERRIDES += \
 	persist.fuse_sdcard=true

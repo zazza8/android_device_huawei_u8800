@@ -43,8 +43,8 @@ lib/libhwrpc.so
 lib/libidl.so
 lib/libmmgsdilib.so
 lib/libnetmgr.so
-lib/libnv.so
-lib/liboncrpc.so
+-lib/libnv.so
+-lib/liboncrpc.so
 lib/libpbmlib.so
 lib/libqdp.so
 lib/libqmi.so
