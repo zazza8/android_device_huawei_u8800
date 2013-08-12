@@ -91,6 +91,7 @@ PRODUCT_PACKAGES += \
 
 # HAL
 PRODUCT_PACKAGES += \
+	audio.a2dp.default \
 	audio.primary.msm7x30 \
 	audio_policy.msm7x30 \
 	copybit.msm7x30 \
@@ -153,3 +154,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	ril.subscription.types=NV,RUIM \
 	ro.use_data_netmgrd=true \
 	ro.telephony.ril_class=GBQualcommRIL
+
+# Bluetooth
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.bt.bdaddr_path=/data/misc/bluedroid/bdaddr

@@ -13,10 +13,11 @@
  */
 
 typedef union {
-	unsigned char wlan_mac_address[6];
+	unsigned char mac_address[6];
 } nv_item_type;
 
 typedef enum {
+	NV_BT_MAC_ADDRESS_I			= 447,
 	NV_WLAN_MAC_ADDRESS_I			= 4678
 } nv_items_enum_type;
 

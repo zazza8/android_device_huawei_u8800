@@ -16,6 +16,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <private/android_filesystem_config.h>
 
 #include "oncrpc.h"
 #include "nv.h"
@@ -23,12 +26,15 @@
 #define MAC_SIZE 6
 #define WIFI_MAC_PROPERTY "persist.wifi.mac"
 #define DRIVER_ARG_PROP_NAME "wlan.driver.arg"
+#define BT_MAC_PATH_PROPERTY "ro.bt.bdaddr_path"
 
 static void start_rpc_client(bool enable);
 static bool is_modem_available(void);
 static void handle_wlan_mac(void);
+static void handle_bt_mac(void);
 
 static void get_wlan_mac(unsigned char *buffer);
+static void get_bt_mac(unsigned char *buffer);
 
 int main()
 {
@@ -40,6 +46,7 @@ int main()
 	}
 
 	handle_wlan_mac();
+	handle_bt_mac();
 
 exit:
 	start_rpc_client(false);
@@ -94,5 +101,60 @@ static void get_wlan_mac(unsigned char *buffer)
 
 	/* Convert endianness (reverse the order). */
 	for (i = 0; i < MAC_SIZE; i++)
-		buffer[(MAC_SIZE - 1) - i] = nv_item.wlan_mac_address[i];
+		buffer[(MAC_SIZE - 1) - i] = nv_item.mac_address[i];
+}
+
+#define MAC_STRING_SIZE 18
+
+static void handle_bt_mac(void)
+{
+	unsigned char btmac[MAC_SIZE];
+	char bt_path_property[PROPERTY_VALUE_MAX];
+	char bt_mac_address[MAC_STRING_SIZE];
+	int fd;
+
+	/* Bluetooth MAC address is stored in a file. If the file path is set,
+	 * write the MAC address. */
+	if (property_get(BT_MAC_PATH_PROPERTY, bt_path_property, NULL)) {
+		get_bt_mac(btmac);
+
+		snprintf(bt_mac_address, MAC_STRING_SIZE,
+			"%.2X:%.2X:%.2X:%.2X:%.2X:%.2X",
+			btmac[0], btmac[1], btmac[2],
+			btmac[3], btmac[4], btmac[5]);
+
+		/* Set same chmod permissions as bt_config.xml */
+		fd = open(bt_path_property, O_RDWR | O_CREAT,
+			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+		if (fd <= 0) {
+			printf("Failed to open %s\n", bt_path_property);
+			return;
+		}
+
+		/* In case there is something written, return. */
+		if (read(fd, bt_mac_address, MAC_STRING_SIZE)) {
+			printf("MAC address already set\n");
+			return;
+		}
+
+		write(fd, bt_mac_address, MAC_STRING_SIZE);
+
+		/* Set same chown permissions as bt_config.xml */
+		fchown(fd, AID_BLUETOOTH, AID_NET_BT_STACK);
+
+		close(fd);
+	}
+}
+
+static void get_bt_mac(unsigned char *buffer)
+{
+	nv_item_type nv_item;
+	int i;
+
+	/* Read the BT MAC NV Item */
+	nv_cmd_remote(NV_READ_F, NV_BT_MAC_ADDRESS_I, &nv_item);
+
+	/* Convert endianness (reverse the order). */
+	for (i = 0; i < MAC_SIZE; i++)
+		buffer[(MAC_SIZE - 1) - i] = nv_item.mac_address[i];
 }

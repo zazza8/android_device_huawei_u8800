@@ -68,3 +68,6 @@ etc/firmware/wlan/qcom_wlan_nv.bin
 
 # Wi-Fi Module
 lib/modules/wlan.ko
+
+# BT Firmware Loader
+bin/hci_qcomm_init
