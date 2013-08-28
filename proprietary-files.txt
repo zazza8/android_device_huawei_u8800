@@ -17,38 +17,101 @@
 # If the library is needed to be linked to some other binary, please use "-" in
 # front of the library.
 
-# RMT Storage Server
-bin/rmt_storage
+#
+# PULLED BLOBS
+#
+
+# RMT Storage Daemon
+system/bin/rmt_storage
 
 # RIL
-bin/cnd
-bin/netmgrd
-bin/qmuxd
-lib/libril-qc-1.so
+system/bin/cnd
+system/bin/netmgrd
+system/bin/qmuxd
+system/lib/libril-qc-1.so
 
 # RIL Prebuilt
-bin/rild
-lib/libril.so
+system/bin/rild
+system/lib/libril.so
 
 # RIL Dependencies
-lib/libauth.so
-lib/libcm.so
-lib/libdiag.so
-lib/libdsi_netctrl.so
-lib/libdsm.so
-lib/libdsutils.so
-lib/libgsdi_exp.so
-lib/libgstk_exp.so
-lib/libhwrpc.so
-lib/libidl.so
-lib/libmmgsdilib.so
-lib/libnetmgr.so
--lib/libnv.so
--lib/liboncrpc.so
-lib/libpbmlib.so
-lib/libqdp.so
-lib/libqmi.so
-lib/libqueue.so
-lib/libril-qcril-hook-oem.so
-lib/libwms.so
-lib/libwmsts.so
+system/lib/libauth.so
+system/lib/libcm.so
+system/lib/libdiag.so
+system/lib/libdsi_netctrl.so
+system/lib/libdsm.so
+system/lib/libdsutils.so
+system/lib/libgsdi_exp.so
+system/lib/libgstk_exp.so
+system/lib/libhwrpc.so
+system/lib/libidl.so
+system/lib/libmmgsdilib.so
+system/lib/libnetmgr.so
+-system/lib/libnv.so
+-system/lib/liboncrpc.so
+system/lib/libpbmlib.so
+system/lib/libqdp.so
+system/lib/libqmi.so
+system/lib/libqueue.so
+system/lib/libril-qcril-hook-oem.so
+system/lib/libwms.so
+system/lib/libwmsts.so
+
+#
+# EXTERNAL BLOBS
+#
+
+# Audio
+-system/lib/libaudcal.so
+-system/lib/libaudioalsa.so
+
+# EGL Firmware
+system/etc/firmware/a225p5_pm4.fw
+system/etc/firmware/a225_pfp.fw
+system/etc/firmware/a225_pm4.fw
+system/etc/firmware/a300_pfp.fw
+system/etc/firmware/a300_pm4.fw
+system/etc/firmware/leia_pfp_470.fw
+system/etc/firmware/leia_pm4_470.fw
+system/etc/firmware/yamato_pfp.fw
+system/etc/firmware/yamato_pm4.fw
+
+# EGL Libraries
+system/lib/egl/eglsubAndroid.so
+system/lib/egl/libEGL_adreno200.so
+system/lib/egl/libGLESv1_CM_adreno200.so
+system/lib/egl/libGLESv2_adreno200.so
+system/lib/egl/libplayback_adreno200.so
+system/lib/egl/libq3dtools_adreno200.so
+system/lib/libc2d2_a3xx.so
+system/lib/libc2d2_z180.so
+system/lib/libC2D2.so
+system/lib/libgsl.so
+system/lib/libllvm-a3xx.so
+system/lib/libllvm-arm.so
+system/lib/libOpenCL.so
+system/lib/libOpenVG.so
+system/lib/libsc-a2xx.so
+system/lib/libsc-a3xx.so
+
+# VIDC 720P Firmware
+system/etc/firmware/vidc_720p_command_control.fw
+system/etc/firmware/vidc_720p_h263_dec_mc.fw
+system/etc/firmware/vidc_720p_h264_dec_mc.fw
+system/etc/firmware/vidc_720p_h264_enc_mc.fw
+system/etc/firmware/vidc_720p_mp4_dec_mc.fw
+system/etc/firmware/vidc_720p_mp4_enc_mc.fw
+system/etc/firmware/vidc_720p_vc1_dec_mc.fw
+
+# Wi-Fi Firmware
+system/etc/firmware/wlan/cfg.dat
+system/etc/firmware/wlan/qcom_cfg.ini
+system/etc/firmware/wlan/qcom_fw.bin
+system/etc/firmware/wlan/qcom_wapi_fw.bin
+system/etc/firmware/wlan/qcom_wlan_nv.bin
+
+# Wi-Fi Module
+system/lib/modules/wlan.ko
+
+# BT Firmware Loader
+system/bin/hci_qcomm_init
