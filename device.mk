@@ -55,6 +55,11 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/init.target.rc:root/init.target.rc \
 	$(LOCAL_PATH)/ueventd.qcom.rc:root/ueventd.qcom.rc
 
+# Recovery script
+PRODUCT_COPY_FILES += \
+	$(LOCAL_PATH)/recovery/init.recovery.qcom.rc:root/init.recovery.qcom.rc \
+	$(LOCAL_PATH)/recovery/postrecoveryboot.sh:recovery/root/sbin/postrecoveryboot.sh
+
 # The fstab file
 PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/fstab.u8800:root/fstab.u8800 \

@@ -61,6 +61,9 @@ system/lib/libwmsts.so
 # EXTERNAL BLOBS
 #
 
+# RMT Storage Daemon for recovery (static linkage)
+recovery/root/sbin/rmt_storage
+
 # Audio
 -system/lib/libaudcal.so
 -system/lib/libaudioalsa.so
