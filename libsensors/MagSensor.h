@@ -32,6 +32,7 @@
 #define LSM303DLH_MAG_NAME            "lsm303dlh_mag"
 #define LSM303DLH_MAG_DEVICE          "/dev/" LSM303DLH_MAG_NAME
 /*****************************************************************************/
+#define LSM303DLH_MAG_CALIBRATION     "/data/misc/sensors/lsm303dlh_mag"
 
 struct input_event;
 
@@ -42,7 +43,19 @@ private:
     bool mHasPendingEvent;
     sensors_event_t mPendingEvent;
 
+    enum coordinate {
+        X,
+        Y,
+        Z,
+        MAX_COORDS
+    };
+
+    int minVal[MAX_COORDS];
+    int maxVal[MAX_COORDS];
+
     float getCorrectReading(int code, int value);
+    void restoreCalibrationInfo(void);
+    void saveCalibrationInfo(void);
 
 public:
             MagSensor();

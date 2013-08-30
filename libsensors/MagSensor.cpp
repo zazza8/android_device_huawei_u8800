@@ -23,17 +23,29 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <cutils/log.h>
 
 #include "MagSensor.h"
 
 /*****************************************************************************/
 
+template <class T> const T& min (const T& a, const T& b) {
+  return !(b<a)?a:b;     // or: return !comp(b,a)?a:b; for version (2)
+}
+template <class T> const T& max (const T& a, const T& b) {
+  return (a<b)?b:a;     // or: return comp(a,b)?b:a; for version (2)
+}
+
+
 MagSensor::MagSensor()
     : SensorBase(LSM303DLH_MAG_DEVICE, LSM303DLH_MAG_NAME),
       mInputReader(4), mEnabled(0), mHasPendingEvent(false)
 {
     ALOGD_IF(MAG_DEBUG, "MagSensor: Initializing...");
+
+    minVal[X] = minVal[Y] = minVal[Z] = INT_MAX;
+    maxVal[X] = maxVal[Y] = maxVal[Z] = -INT_MAX;
 
     mPendingEvent.version = sizeof(sensors_event_t);
     mPendingEvent.sensor = ID_M;
@@ -65,16 +77,20 @@ int MagSensor::enable(int32_t handle, int enabled)
     if (mEnabled == _enabled)
         return 0;
 
-    if (_enabled)
+    if (_enabled) {
+        restoreCalibrationInfo();
         open_device();
+    }
 
     if (ioctl(dev_fd, LSM303DLH_MAG_IOCTL_SET_ENABLE, &enabled))
         ALOGE("MagSensor: Failed to set enable.");
 
     mEnabled = _enabled;
 
-    if (!_enabled)
+    if (!_enabled) {
+        saveCalibrationInfo();
         close_device();
+    }
 
     return 0;
 }
@@ -150,22 +166,74 @@ int MagSensor::readEvents(sensors_event_t* data, int count)
     return numEventReceived;
 }
 
-#define MIN_X (-356)
-#define MAX_X (575)
-#define MIN_Y (-34)
-#define MAX_Y (965)
-#define MIN_Z (-253)
-#define MAX_Z (809)
-
 float MagSensor::getCorrectReading(int code, int value)
 {
-    // Shift to zero.
-    if (code == EVENT_TYPE_MAGV_X)
-        value = value - ((MIN_X + MAX_X) / 2);
-    else if (code == EVENT_TYPE_MAGV_Y)
-        value = value - ((MIN_Y + MAX_Y) / 2);
-    else if (code == EVENT_TYPE_MAGV_Z)
-        value = value - ((MIN_Z + MAX_Z) / 2);
+    /* Shift to zero and calibrate it on the go. */
+    if (code == EVENT_TYPE_MAGV_X) {
+        minVal[X] = min(minVal[X], value);
+        maxVal[X] = max(maxVal[X], value);
+
+        value = value - ((minVal[X] + maxVal[X]) / 2);
+    }
+    else if (code == EVENT_TYPE_MAGV_Y) {
+        minVal[Y] = min(minVal[Y], value);
+        maxVal[Y] = max(maxVal[Y], value);
+
+        value = value - ((minVal[Y] + maxVal[Y]) / 2);
+    }
+    else if (code == EVENT_TYPE_MAGV_Z) {
+        minVal[Z] = min(minVal[Z], value);
+        maxVal[Z] = max(maxVal[Z], value);
+
+        value = value - ((minVal[Z] + maxVal[Z]) / 2);
+    }
 
     return value * CONVERT_M;
+}
+
+void MagSensor::restoreCalibrationInfo()
+{
+    ALOGD_IF(MAG_DEBUG, "Restoring calibration information");
+    int cal_fd =
+        open(LSM303DLH_MAG_CALIBRATION, O_RDONLY);
+
+    if (cal_fd < 0) {
+        ALOGD_IF(MAG_DEBUG, "No calibration information");
+        return;
+    }
+
+    char buffer[512] = {0};
+
+    read(cal_fd, buffer, 512);
+
+    sscanf(buffer,
+        "XminVal=%d XmaxVal=%d\n"
+        "YminVal=%d YmaxVal=%d\n"
+        "ZminVal=%d ZmaxVal=%d\n",
+        &minVal[X], &maxVal[X], &minVal[Y], &maxVal[Y], &minVal[Z], &maxVal[Z]);
+
+    close(cal_fd);
+}
+
+void MagSensor::saveCalibrationInfo()
+{
+    ALOGD_IF(MAG_DEBUG, "Saving calibration information");
+    int cal_fd =
+        open(LSM303DLH_MAG_CALIBRATION, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (cal_fd < 0) {
+        ALOGE("Cannot open calibration information");
+        return;
+    }
+
+    char buffer[512] = {0};
+
+    int length = snprintf(buffer, 512,
+        "XminVal=%d XmaxVal=%d\n"
+        "YminVal=%d YmaxVal=%d\n"
+        "ZminVal=%d ZmaxVal=%d\n",
+        minVal[X], maxVal[X], minVal[Y], maxVal[Y], minVal[Z], maxVal[Z]);
+
+    write(cal_fd, buffer, 512);
+
+    close(cal_fd);
 }

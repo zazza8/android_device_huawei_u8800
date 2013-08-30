@@ -32,6 +32,9 @@ on init
     chown system system /sys/devices/platform/msm_otg/mode
     chown system system /sys/class/timed_output/vibrator/voltage_level
 
+on post-fs-data
+    mkdir /data/misc/sensors 0770 system system
+
 on property:sys.radio.shutdown=true
    exec /system/bin/sh /system/etc/init.qcom.efs.sync.sh
 
