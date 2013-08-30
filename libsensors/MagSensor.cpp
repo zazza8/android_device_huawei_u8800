@@ -169,23 +169,27 @@ int MagSensor::readEvents(sensors_event_t* data, int count)
 float MagSensor::getCorrectReading(int code, int value)
 {
     /* Shift to zero and calibrate it on the go. */
-    if (code == EVENT_TYPE_MAGV_X) {
+    switch (code) {
+    case EVENT_TYPE_MAGV_X:
         minVal[X] = min(minVal[X], value);
         maxVal[X] = max(maxVal[X], value);
 
         value = value - ((minVal[X] + maxVal[X]) / 2);
-    }
-    else if (code == EVENT_TYPE_MAGV_Y) {
+        break;
+    case EVENT_TYPE_MAGV_Y:
         minVal[Y] = min(minVal[Y], value);
         maxVal[Y] = max(maxVal[Y], value);
 
         value = value - ((minVal[Y] + maxVal[Y]) / 2);
-    }
-    else if (code == EVENT_TYPE_MAGV_Z) {
+        break;
+    case EVENT_TYPE_MAGV_Z:
         minVal[Z] = min(minVal[Z], value);
         maxVal[Z] = max(maxVal[Z], value);
 
         value = value - ((minVal[Z] + maxVal[Z]) / 2);
+        break;
+    default:
+        break;
     }
 
     return value * CONVERT_M;
