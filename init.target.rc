@@ -32,6 +32,8 @@ on init
     chown system system /sys/devices/platform/msm_otg/mode
     chown system system /sys/class/timed_output/vibrator/voltage_level
 
+    mkdir /cust
+
 on post-fs-data
     mkdir /data/misc/sensors 0770 system system
 
