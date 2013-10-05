@@ -40,7 +40,8 @@ template <class T> const T& max (const T& a, const T& b) {
 
 MagSensor::MagSensor()
     : SensorBase(LSM303DLH_MAG_DEVICE, LSM303DLH_MAG_NAME),
-      mInputReader(4), mEnabled(0), mHasPendingEvent(false)
+      mInputReader(4), mEnabled(0), mHasPendingEvent(false),
+      calibrationInfo(false)
 {
     ALOGD_IF(MAG_DEBUG, "MagSensor: Initializing...");
 
@@ -168,20 +169,26 @@ float MagSensor::getCorrectReading(int code, int value)
     /* Shift to zero and calibrate it on the go. */
     switch (code) {
     case EVENT_TYPE_MAGV_X:
-        minVal[X] = min(minVal[X], value);
-        maxVal[X] = max(maxVal[X], value);
+        if (!calibrationInfo) {
+            minVal[X] = min(minVal[X], value);
+            maxVal[X] = max(maxVal[X], value);
+        }
 
         value = value - ((minVal[X] + maxVal[X]) / 2);
         break;
     case EVENT_TYPE_MAGV_Y:
-        minVal[Y] = min(minVal[Y], value);
-        maxVal[Y] = max(maxVal[Y], value);
+        if (!calibrationInfo) {
+            minVal[Y] = min(minVal[Y], value);
+            maxVal[Y] = max(maxVal[Y], value);
+        }
 
         value = value - ((minVal[Y] + maxVal[Y]) / 2);
         break;
     case EVENT_TYPE_MAGV_Z:
-        minVal[Z] = min(minVal[Z], value);
-        maxVal[Z] = max(maxVal[Z], value);
+        if (!calibrationInfo) {
+            minVal[Z] = min(minVal[Z], value);
+            maxVal[Z] = max(maxVal[Z], value);
+        }
 
         value = value - ((minVal[Z] + maxVal[Z]) / 2);
         break;
@@ -202,7 +209,10 @@ void MagSensor::restoreCalibrationInfo()
         ALOGD_IF(MAG_DEBUG, "No calibration information");
         minVal[X] = minVal[Y] = minVal[Z] = INT_MAX;
         maxVal[X] = maxVal[Y] = maxVal[Z] = -INT_MAX;
+        calibrationInfo = false;
         return;
+    } else {
+        calibrationInfo = true;
     }
 
     char buffer[512] = {0};

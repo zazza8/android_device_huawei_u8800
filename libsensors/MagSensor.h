@@ -53,6 +53,8 @@ private:
     int minVal[MAX_COORDS];
     int maxVal[MAX_COORDS];
 
+    bool calibrationInfo;
+
     float getCorrectReading(int code, int value);
     void restoreCalibrationInfo(void);
     void saveCalibrationInfo(void);
