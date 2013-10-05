@@ -31,6 +31,8 @@
 #define RANGE_DEC_THRESHOLD     10
 #define RANGE_INC_THRESHOLD     4000
 
+#define PROX_SAMPLES		3
+
 /* Values after converting the range. */
 #define PROX_3CM_HIGH_THRESHOLD 40
 #define PROX_3CM_LOW_THRESHOLD  25

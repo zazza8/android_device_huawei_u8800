@@ -41,6 +41,9 @@ private:
     float getProxValue(uint16_t adc_count);
     float getCorrectADC(uint16_t adc_count);
     struct aps_12d_settings settings;
+
+    float mSamples[PROX_SAMPLES];
+    int mSampleCounter;
 public:
             ProximitySensor();
     virtual ~ProximitySensor();

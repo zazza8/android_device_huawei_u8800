@@ -31,7 +31,8 @@
 
 ProximitySensor::ProximitySensor()
     : SensorBase(APS_12D_DEVICE, APS_12D_NAME),
-      mInputReader(4), mEnabled(0), mHasPendingEvent(false)
+      mInputReader(4), mEnabled(0), mHasPendingEvent(false),
+      mSampleCounter(0)
 {
     ALOGD_IF(PROX_DEBUG, "ProximitySensor: Initializing...");
 
@@ -154,7 +155,29 @@ float ProximitySensor::getProxValue(uint16_t adc_count)
     else if (correct_adc <= PROX_3CM_LOW_THRESHOLD)
         distance = 1.0f;
 
-    return distance;
+    /* Compare data with previously saved. */
+    int i;
+    for (i = 0; i < PROX_SAMPLES; i++) {
+        if (mSamples[i] != distance)
+            break;
+    }
+
+    float return_distance;
+
+    /* Only return distance as close when PROX_SAMPLES data matches. */
+    if (i == PROX_SAMPLES && distance == 0.0f)
+        return_distance = distance;
+    else
+        return_distance = 1.0f;
+
+    /* Save data for future processing. */
+    mSamples[mSampleCounter] = distance;
+    mSampleCounter++;
+
+    if (mSampleCounter == PROX_SAMPLES)
+        mSampleCounter = 0;
+
+    return return_distance;
 }
 
 float ProximitySensor::getCorrectADC(uint16_t adc_count)
