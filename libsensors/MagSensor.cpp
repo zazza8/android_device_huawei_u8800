@@ -44,9 +44,6 @@ MagSensor::MagSensor()
 {
     ALOGD_IF(MAG_DEBUG, "MagSensor: Initializing...");
 
-    minVal[X] = minVal[Y] = minVal[Z] = INT_MAX;
-    maxVal[X] = maxVal[Y] = maxVal[Z] = -INT_MAX;
-
     mPendingEvent.version = sizeof(sensors_event_t);
     mPendingEvent.sensor = ID_M;
     mPendingEvent.type = SENSOR_TYPE_MAGNETIC_FIELD;
@@ -203,6 +200,8 @@ void MagSensor::restoreCalibrationInfo()
 
     if (cal_fd < 0) {
         ALOGD_IF(MAG_DEBUG, "No calibration information");
+        minVal[X] = minVal[Y] = minVal[Z] = INT_MAX;
+        maxVal[X] = maxVal[Y] = maxVal[Z] = -INT_MAX;
         return;
     }
 
