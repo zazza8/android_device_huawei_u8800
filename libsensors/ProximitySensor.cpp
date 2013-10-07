@@ -70,7 +70,7 @@ int ProximitySensor::enable(int32_t handle, int enabled)
         open_device();
 
     if (ioctl(dev_fd, APS_IOCTL_SET_PROXIMITY_ENABLE, &_enabled))
-        ALOGE("ProximitySensor: Failed to set light enable.");
+        ALOGE("ProximitySensor: Failed to set proximity enable.");
 
     mEnabled = _enabled;
 
@@ -85,7 +85,7 @@ int ProximitySensor::setDelay(int32_t handle, int64_t ns)
         return 0;
 
     if (ioctl(dev_fd, APS_IOCTL_SET_PROXIMITY_DELAY, &ns))
-        ALOGE("ProximitySensor: Failed to set light delay.");
+        ALOGE("ProximitySensor: Failed to set proximity delay.");
 
     return 0;
 }
