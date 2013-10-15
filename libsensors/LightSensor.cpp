@@ -150,7 +150,7 @@ float LightSensor::getLuxValue(uint16_t adc_count)
 
     configureRange(adc_count);
 
-    return roundf(correct_adc);
+    return floorf(correct_adc);
 }
 
 float LightSensor::getCorrectADC(uint16_t adc_count)
