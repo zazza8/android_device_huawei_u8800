@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Cihaz Ayarları</string>
+    <string name="toast_replug_headset">Lütfen kulaklığı yeniden takın.</string>
+</resources>

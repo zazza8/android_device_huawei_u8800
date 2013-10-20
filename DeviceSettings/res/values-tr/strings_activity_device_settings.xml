@@ -1,0 +1,20 @@
+<resources>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Settings for General -->
+
+    <string name="pref_vibrator_title">Titreşim Gücü</string>
+    <string name="pref_vibrator_summary">Şu anki voltaj: %d mV</string>
+
+    <!-- Settings for USB -->
+    <string name="pref_header_usb">USB</string>
+
+    <string name="pref_host_title">Host modu</string>
+    <string name="pref_host_summary">USB OTG yi aktif et</string>
+
+    <!-- Settings for Headset -->
+    <string name="pref_header_headset">Kulaklık</string>
+
+    <string name="pref_internalmic_title">Telefon mikrafonuna zorla</string>
+</resources>
