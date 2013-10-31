@@ -26,8 +26,15 @@ public class Startup extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(LOG_TAG, "Restoring preferences");
-        restore(context);
+        if (intent.getAction() == Intent.ACTION_BOOT_COMPLETED) {
+            Log.d(LOG_TAG, "Restoring preferences");
+            restore(context);
+        } else if (intent.getAction() == USBSettings.USB_HOST_NOTIFICATION_INTENT) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            prefs.edit().putBoolean(DeviceSettings.USB_MODE_STATE, false).commit();
+
+            USBSettings.writeMode(context, false);
+        }
     }
 
     /**
@@ -44,7 +51,7 @@ public class Startup extends BroadcastReceiver {
          */
         value = prefs.getBoolean(DeviceSettings.USB_MODE_STATE, false);
         if (value)
-            USBSettings.writeMode(value);
+            USBSettings.writeMode(context, value);
 
         value = prefs.getBoolean(DeviceSettings.AUDIO_INTERNALMIC_STATE, false);
         AudioSettings.writeInternalmicForced(context, value);

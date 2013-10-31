@@ -29,6 +29,7 @@
         <receiver android:name="com.cyanogenmod.settings.device.Startup">
             <intent-filter android:priority="100">
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="com.cyanogenmod.settings.device.usb_host"/>
             </intent-filter>
         </receiver>
     </application>

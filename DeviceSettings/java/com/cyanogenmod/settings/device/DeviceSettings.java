@@ -107,7 +107,7 @@ public class DeviceSettings extends PreferenceActivity
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         if (s.equals(USB_MODE_STATE))
-            USBSettings.writeMode(sharedPreferences.getBoolean(USB_MODE_STATE, false));
+            USBSettings.writeMode(this, sharedPreferences.getBoolean(USB_MODE_STATE, false));
         else if (s.equals(AUDIO_INTERNALMIC_STATE))
             AudioSettings.writeInternalmicForced(this, sharedPreferences.getBoolean(AUDIO_INTERNALMIC_STATE, false));
         else if (s.equals(VIBRATOR_INTENSITY)) {
