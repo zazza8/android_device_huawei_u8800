@@ -63,7 +63,6 @@ PRODUCT_COPY_FILES += \
 # The fstab file
 PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/fstab.u8800:root/fstab.u8800 \
-	$(LOCAL_PATH)/fstab.sdcard:root/fstab.sdcard \
 	$(LOCAL_PATH)/vold.fstab:system/etc/vold.fstab
 
 # Configs
