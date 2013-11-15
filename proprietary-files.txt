@@ -118,3 +118,13 @@ system/lib/modules/wlan.ko
 
 # BT Firmware Loader
 system/bin/hci_qcomm_init
+
+# Camera Libraries
+system/lib/libchromatix_s5k4e1gx_p_default_video.so
+system/lib/libchromatix_s5k4e1gx_p_preview.so
+system/lib/libchromatix_ov5647_sunny_preview.so
+system/lib/libchromatix_ov5647_sunny_default_video.so
+system/lib/libgemini.so
+system/lib/libmmipl.so
+-system/lib/libmmjpeg.so
+system/lib/liboemcamera.so
