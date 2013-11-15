@@ -45,7 +45,8 @@ PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
 	frameworks/native/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
 	frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
-	frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml
+	frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+	frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml
 
 # Init scripts
 PRODUCT_COPY_FILES += \
@@ -98,6 +99,7 @@ PRODUCT_PACKAGES += \
 	audio.a2dp.default \
 	audio.primary.msm7x30 \
 	audio_policy.msm7x30 \
+	camera.msm7x30 \
 	copybit.msm7x30 \
 	gralloc.msm7x30 \
 	hwcomposer.msm7x30 \
