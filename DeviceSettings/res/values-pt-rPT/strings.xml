@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Definições do dispositivo</string>
+    <string name="toast_replug_headset">Por favor volte a ligar os auscultadores.</string>
+</resources>

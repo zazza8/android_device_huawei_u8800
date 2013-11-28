@@ -1,0 +1,20 @@
+<resources>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Settings for General -->
+
+    <string name="pref_vibrator_title">Intensidade da vibração</string>
+    <string name="pref_vibrator_summary">Voltagem actual: %d mV</string>
+
+    <!-- Settings for USB -->
+    <string name="pref_header_usb">USB</string>
+
+    <string name="pref_host_title">Modo anfitrião</string>
+    <string name="pref_host_summary">Activar USB OTG</string>
+
+    <!-- Settings for Headset -->
+    <string name="pref_header_headset">Auscultadores</string>
+
+    <string name="pref_internalmic_title">Utilizar microfone interno</string>
+</resources>
