@@ -1,0 +1,18 @@
+<resources>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Settings for General -->
+
+
+    <!-- Settings for USB -->
+    <string name="pref_header_usb">USB</string>
+
+    <string name="pref_host_title">Isäntätila</string>
+    <string name="pref_host_summary">Ota käyttöön USB OTG</string>
+
+    <!-- Settings for Headset -->
+    <string name="pref_header_headset">Kuulokkeet</string>
+
+    <string name="pref_internalmic_title">Pakota sisäinen mikrofoni</string>
+</resources>
