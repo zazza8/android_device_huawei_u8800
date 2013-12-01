@@ -120,10 +120,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	hwmac
 
-# Allow emulated sdcard on /data/media
-PRODUCT_PROPERTY_OVERRIDES += \
-	persist.fuse_sdcard=true
-
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.sf.lcd_density=240
 
