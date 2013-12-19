@@ -16,7 +16,6 @@
 ** limitations under the License.
 */
 
-#define LOG_NDEBUG 0
 #define LOG_TAG "QualcommCameraHardware"
 #include <utils/Log.h>
 #include "QualcommCameraHardware.h"
@@ -6576,7 +6575,7 @@ void QualcommCameraHardware::receiveLiveSnapshot(uint32_t jpeg_size)
 }
 void QualcommCameraHardware::receivePreviewFrame(struct msm_frame *frame)
 {
-    ALOGI("receivePreviewFrame E");
+    ALOGV("receivePreviewFrame E");
     if (!mCameraRunning) {
         ALOGE("ignoring preview callback--camera has been stopped");
         LINK_camframe_add_frame(CAM_PREVIEW_FRAME,frame);
@@ -6589,7 +6588,7 @@ void QualcommCameraHardware::receivePreviewFrame(struct msm_frame *frame)
         LINK_camframe_add_frame(CAM_PREVIEW_FRAME,frame);
 
 
-    ALOGI("receivePreviewFrame X");
+    ALOGV("receivePreviewFrame X");
 }
 void QualcommCameraHardware::receiveCameraStats(camstats_type stype, camera_preview_histogram_info* histinfo)
 {
