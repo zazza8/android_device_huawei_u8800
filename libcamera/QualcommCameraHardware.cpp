@@ -2562,10 +2562,6 @@ bool QualcommCameraHardware::initImageEncodeParameters(int size)
     }
 
     int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
-    char mDeviceName[PROPERTY_VALUE_MAX];
-    property_get("ro.hw_plat", mDeviceName, "");
-    if(!strcmp(mDeviceName,"7x25A"))
-        rotation = (rotation + 90)%360;
 
     if (mIs3DModeOn)
         rotation = 0;
@@ -2707,7 +2703,7 @@ static bool register_buf(int size,
                          uint8_t *buf,
                          int pmem_type,
                          bool vfe_can_write,
-                         bool register_buffer)
+                         bool register_buffer = true)
 {
     struct msm_pmem_info pmemBuf;
     CAMERA_HAL_UNUSED(frame_size);
@@ -2734,17 +2730,6 @@ static bool register_buf(int size,
     return true;
 
 }
-
-static bool register_buf(int size,
-                         int frame_size,
-                         int cbcr_offset,
-                         int yoffset,
-                         int pmempreviewfd,
-                         uint32_t offset,
-                         uint8_t *buf,
-                         int pmem_type,
-                         bool vfe_can_write,
-                         bool register_buffer = true);
 
 void QualcommCameraHardware::runFrameThread(void *data)
 {
@@ -4468,10 +4453,6 @@ bool QualcommCameraHardware::initRaw(bool initJpegHeap)
     }
 
     int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
-    char mDeviceName[PROPERTY_VALUE_MAX];
-    property_get("ro.hw_plat", mDeviceName, "");
-    if(!strcmp(mDeviceName,"7x25A"))
-        rotation = (rotation + 90)%360;
 
     if (mIs3DModeOn)
         rotation = 0;
