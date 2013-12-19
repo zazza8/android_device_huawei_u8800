@@ -2525,7 +2525,7 @@ bool QualcommCameraHardware::initImageEncodeParameters(int size)
 {
     ALOGV("%s: E", __FUNCTION__);
     memset(&mImageEncodeParms, 0, sizeof(encode_params_t));
-    int jpeg_quality = mParameters.getInt("jpeg-quality");
+    int jpeg_quality = mParameters.getInt(CameraParameters::KEY_JPEG_QUALITY);
     bool ret;
     if (jpeg_quality >= 0) {
         ALOGV("initJpegParameters, current jpeg main img quality =%d",
@@ -2543,7 +2543,7 @@ bool QualcommCameraHardware::initImageEncodeParameters(int size)
         }
     }
 
-    int thumbnail_quality = mParameters.getInt("jpeg-thumbnail-quality");
+    int thumbnail_quality = mParameters.getInt(CameraParameters::KEY_JPEG_THUMBNAIL_QUALITY);
     if (thumbnail_quality >= 0) {
         //Application can pass quality of zero
         //when there is no back sensor connected.
@@ -2561,7 +2561,7 @@ bool QualcommCameraHardware::initImageEncodeParameters(int size)
         }
     }
 
-    int rotation = mParameters.getInt("rotation");
+    int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
     char mDeviceName[PROPERTY_VALUE_MAX];
     property_get("ro.hw_plat", mDeviceName, "");
     if(!strcmp(mDeviceName,"7x25A"))
@@ -4467,7 +4467,7 @@ bool QualcommCameraHardware::initRaw(bool initJpegHeap)
         }
     }
 
-    int rotation = mParameters.getInt("rotation");
+    int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
     char mDeviceName[PROPERTY_VALUE_MAX];
     property_get("ro.hw_plat", mDeviceName, "");
     if(!strcmp(mDeviceName,"7x25A"))
@@ -5840,7 +5840,7 @@ status_t QualcommCameraHardware::takePicture()
         }
     }
     else {
-        int rotation = mParameters.getInt("rotation");
+        int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
         native_set_parms(CAMERA_PARM_JPEG_ROTATION, sizeof(int), &rotation);
     }
 #if 0    // TODO for ICS
@@ -6339,8 +6339,8 @@ status_t QualcommCameraHardware::sendCommand(int32_t command, int32_t arg1,
 void QualcommCameraHardware::runSmoothzoomThread(void * data) {
 
     ALOGV("runSmoothzoomThread: Current zoom %d - "
-          "Target %d", mParameters.getInt("zoom"), mTargetSmoothZoom);
-    int current_zoom = mParameters.getInt("zoom");
+          "Target %d", mParameters.getInt(CameraParameters::KEY_ZOOM), mTargetSmoothZoom);
+    int current_zoom = mParameters.getInt(CameraParameters::KEY_ZOOM);
     int step = (current_zoom > mTargetSmoothZoom)? -1: 1;
 
     if(current_zoom == mTargetSmoothZoom) {
@@ -8104,7 +8104,7 @@ status_t QualcommCameraHardware::setSkinToneEnhancement(const CameraParameters& 
         ALOGI("SkinToneEnhancement not supported for this sensor");
         return NO_ERROR;
      }
-     int skinToneValue = params.getInt("skinToneEnhancement");
+     int skinToneValue = params.getInt(CameraParameters::KEY_SKIN_TONE_ENHANCEMENT);
      if (mSkinToneEnhancement != skinToneValue) {
           ALOGV(" new skinTone correction value : %d ", skinToneValue);
           mSkinToneEnhancement = skinToneValue;
@@ -8726,9 +8726,9 @@ status_t QualcommCameraHardware::setZoom(const CameraParameters& params)
     // we need to have a fixed maximum zoom value and do read it from the
     // driver.
     static const int ZOOM_STEP = 1;
-    int32_t zoom_level = params.getInt("zoom");
+    int32_t zoom_level = params.getInt(CameraParameters::KEY_ZOOM);
     if(zoom_level >= 0 && zoom_level <= mMaxZoom-1) {
-        mParameters.set("zoom", zoom_level);
+        mParameters.set(CameraParameters::KEY_ZOOM, zoom_level);
         int32_t zoom_value = ZOOM_STEP * zoom_level;
         bool ret = native_set_parms(CAMERA_PARM_ZOOM,
             sizeof(zoom_value), (void *)&zoom_value);
