@@ -3575,7 +3575,8 @@ int QualcommCameraHardware::allocate_ion_memory(int *main_ion_fd, struct ion_all
     /* to make it page size aligned */
     alloc->len = (alloc->len + 4095) & (~4095);
     alloc->align = 4096;
-    alloc->flags = (0x1 << ion_type | 0x1 << ION_IOMMU_HEAP_ID);
+    alloc->heap_mask = (0x1 << ion_type);
+    alloc->flags = ~ION_SECURE;
 
     rc = ioctl(*main_ion_fd, ION_IOC_ALLOC, alloc);
     if (rc < 0) {
@@ -4166,7 +4167,7 @@ bool QualcommCameraHardware::createSnapshotMemory (int numberOfRawBuffers, int n
 {
     char * pmem_region;
     int ret;
-    int ion_heap = ION_CP_MM_HEAP_ID;
+    int ion_heap = ION_CAMERA_HEAP_ID;
     if(mCurrentTarget == TARGET_MSM8660) {
        pmem_region = "/dev/pmem_smipool";
     } else {
@@ -6669,7 +6670,7 @@ uint8_t *mm_camera_do_mmap(uint32_t size, int *pmemFd)
 bool QualcommCameraHardware::initRecord()
 {
     const char *pmem_region;
-    int ion_heap = ION_CP_MM_HEAP_ID;
+    int ion_heap = ION_CAMERA_HEAP_ID;
     int CbCrOffset;
     int recordBufferSize;
 	int active, type =0;
