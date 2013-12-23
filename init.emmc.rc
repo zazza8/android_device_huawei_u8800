@@ -1,4 +1,0 @@
-on emmc-fs
-    mount_all ./fstab.u8800
-
-    mount vfat /dev/block/platform/msm_sdcc.2/by-num/p1 /cust ro

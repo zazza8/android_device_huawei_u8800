@@ -34,6 +34,9 @@ on init
 
     mkdir /cust
 
+on fs
+    mount vfat /dev/block/platform/msm_sdcc.2/by-num/p1 /cust ro
+
 on post-fs-data
     mkdir /data/misc/sensors 0770 system system
 

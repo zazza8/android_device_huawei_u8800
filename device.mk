@@ -50,7 +50,6 @@ PRODUCT_COPY_FILES += \
 
 # Init scripts
 PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/init.emmc.rc:root/init.emmc.rc \
 	$(LOCAL_PATH)/init.qcom.rc:root/init.qcom.rc \
 	$(LOCAL_PATH)/init.qcom.usb.rc:root/init.qcom.usb.rc \
 	$(LOCAL_PATH)/init.target.rc:root/init.target.rc \
@@ -63,8 +62,7 @@ PRODUCT_COPY_FILES += \
 
 # The fstab file
 PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/fstab.u8800:root/fstab.u8800 \
-	$(LOCAL_PATH)/vold.fstab:system/etc/vold.fstab
+	$(LOCAL_PATH)/fstab.qcom:root/fstab.qcom
 
 # Configs
 PRODUCT_COPY_FILES += \

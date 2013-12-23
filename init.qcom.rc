@@ -28,24 +28,21 @@
 import init.qcom.usb.rc
 
 on init
-    # Set permissions for persist partition
-    mkdir /persist 0771 system system
     # See storage config details at http://source.android.com/tech/storage/
-    mkdir /storage 0550 system sdcard_r
-    mkdir /storage/sdcard0 0000 system system
-    mkdir /storage/sdcard1 0000 system system
-    mkdir /storage/usbdisk 0000 system system
+    mkdir /mnt/media_rw/sdcard0 0700 media_rw media_rw
+    mkdir /storage/sdcard0 0700 root root
+
+    mkdir /mnt/media_rw/sdcard1 0700 media_rw media_rw
+    mkdir /storage/sdcard1 0700 root root
+
+    mkdir /mnt/media_rw/usbdisk0 0700 media_rw media_rw
+    mkdir /storage/usbdisk0 0700 root root
 
     export EXTERNAL_STORAGE /storage/sdcard1
-    export SECONDARY_STORAGE /storage/sdcard0
+    export SECONDARY_STORAGE /storage/sdcard0:/storage/usbdisk0
 
-    # Support legacy paths
-    symlink /storage/sdcard0 /sdcard0
-    symlink /storage/sdcard0 /mnt/sdcard0
-    symlink /storage/sdcard1 /sdcard1
-    symlink /storage/sdcard1 /mnt/sdcard1
-    symlink /storage/usbdisk /usbdisk
-    symlink /storage/usbdisk /mnt/usbdisk
+on fs
+    mount_all ./fstab.qcom
 
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
@@ -258,10 +255,6 @@ service cnd /system/bin/cnd
 service rmt_storage /system/bin/rmt_storage
     class core
     user root
-    disabled
-
-on property:ro.boot.emmc=1
-    start rmt_storage
 
 service config_bluetooth /system/bin/sh /system/etc/init.qcom.bt.sh "onboot"
     class core
@@ -588,6 +581,18 @@ service profiler_daemon /system/bin/profiler_daemon
     class late_start
     user root
     group root
+    disabled
+
+service fuse_sdcard0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard0
+    class late_start
+    disabled
+
+service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1
+    class late_start
+    disabled
+
+service fuse_usbdisk0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/usbdisk0 /storage/usbdisk0
+    class late_start
     disabled
 
 service hcidump /system/bin/sh /system/etc/hcidump.sh
