@@ -143,7 +143,7 @@ mm_camera_status_t (*LINK_mm_camera_init)(mm_camera_config *, mm_camera_notify*,
 mm_camera_status_t (*LINK_mm_camera_deinit)();
 mm_camera_status_t (*LINK_mm_camera_destroy)();
 mm_camera_status_t (*LINK_mm_camera_exec)();
-mm_camera_status_t (*LINK_mm_camera_get_camera_info) (camera_info_t* p_cam_info, int* p_num_cameras);
+mm_camera_status_t (*LINK_mm_camera_get_camera_info) (mm_camera_info_t* p_cam_info, int* p_num_cameras);
 
 int8_t (*LINK_zoom_crop_upscale)(uint32_t width, uint32_t height,
     uint32_t cropped_width, uint32_t cropped_height, uint8_t *img_buf);
@@ -355,7 +355,7 @@ static bool mVpeEnabled;
 static cam_frame_start_parms camframeParams;
 
 static int HAL_numOfCameras;
-static camera_info_t HAL_cameraInfo[MSM_MAX_CAMERA_SENSORS];
+static mm_camera_info_t HAL_cameraInfo[MSM_MAX_CAMERA_SENSORS];
 static int HAL_currentCameraId;
 static int HAL_currentCameraMode;
 static mm_camera_config mCfgControl;
@@ -2034,7 +2034,7 @@ void QualcommCameraHardware::initDefaultParameters()
     numCapture = 1;
     if(mZslEnable) {
         int maxSnapshot = MAX_SNAPSHOT_BUFFERS - 2;
-        char value[5];
+        char value[PROPERTY_VALUE_MAX];
         property_get("persist.camera.hal.capture", value, "1");
         numCapture = atoi(value);
         if(numCapture > maxSnapshot)
@@ -9812,19 +9812,6 @@ extern "C" void HAL_getCameraInfo(int cameraId, struct CameraInfo* cameraInfo)
 
             ALOGI("%s: orientation = %d", __FUNCTION__, cameraInfo->orientation);
             sensor_rotation = HAL_cameraInfo[i].sensor_mount_angle;
-            cameraInfo->mode = 0;
-            if(HAL_cameraInfo[i].modes_supported & CAMERA_MODE_2D)
-                cameraInfo->mode |= CAMERA_SUPPORT_MODE_2D;
-            if(HAL_cameraInfo[i].modes_supported & CAMERA_MODE_3D)
-                cameraInfo->mode |= CAMERA_SUPPORT_MODE_3D;
-            if((HAL_cameraInfo[i].position == BACK_CAMERA )&&
-                !strncmp(mDeviceName, "msm8660", 7)){
-                cameraInfo->mode |= CAMERA_ZSL_MODE;
-            } else{
-                cameraInfo->mode |= CAMERA_NONZSL_MODE;
-            }
-
-            ALOGI("%s: modes supported = %d", __FUNCTION__, cameraInfo->mode);
 
             return;
         }
