@@ -35,6 +35,8 @@ static const struct sensor_t sSensorList[] = {
         1.0f,
         0.07f,
         52500.0f,
+        0,
+        0,
         { }
     },
     {
@@ -47,6 +49,8 @@ static const struct sensor_t sSensorList[] = {
         1.0f,
         50.0f,
         105000.0f,
+        0,
+        0,
         { }
     },
     {
@@ -59,6 +63,8 @@ static const struct sensor_t sSensorList[] = {
         (2.0f*GRAVITY_EARTH)/2048.0f,
         0.5f,
         1000.0f,
+        0,
+        0,
         { }
     },
     {
@@ -71,6 +77,8 @@ static const struct sensor_t sSensorList[] = {
         0.1f,
         0.5f,
         14000.0f,
+        0,
+        0,
         { }
     },
 };
