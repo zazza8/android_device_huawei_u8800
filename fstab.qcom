@@ -11,6 +11,5 @@
 /devices/platform/msm_sdcc.4/mmc_host/mmc2		auto		auto	defaults							voldmanaged=sdcard1:auto
 /devices/platform/msm_hsusb_host.0			auto		auto	defaults							voldmanaged=usbdisk0:auto
 
-/dev/block/platform/msm_sdcc.2/by-num/p1                /cust           vfat    defaults                                                        defaults
-/dev/null                                               /boot           emmc    defaults                                                        defaults
+/dev/block/platform/msm_sdcc.2/by-num/p1                /boot           vfat    defaults                                                        defaults
 /dev/null                                               /recovery       emmc    defaults                                                        defaults

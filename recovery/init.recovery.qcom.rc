@@ -27,8 +27,5 @@
 #
 #
 
-on init
-    mkdir /cust
-
 service rmt_storage /sbin/rmt_storage /dev/block/mmcblk0p10 /dev/block/mmcblk0p11
 

@@ -26,10 +26,16 @@ def InstallImage(info, mount_point, location, file):
 	info.script.AppendExtra(
 		'package_extract_file("%(file)s", "%(location)s/%(file)s");' % args)
 
-# Function used to copy boot/recovery image to the /cust partition.
+# Function used to copy boot/recovery image to the /cust (/boot) partition.
 def InstallCustImage(info, file):
-	InstallImage(info, "/cust", "/cust/image", file)
+	InstallImage(info, "/boot", "/boot/image", file)
 
 # Function called after flashing the main system is complete.
 def FullOTA_InstallEnd(info):
+	# Manually remove boot.img direct install done by releasetools.
+	# This removal is done before installing cust image.
+	edify = info.script
+	for cmd in edify.script:
+		if "package_extract_file(\"boot.img\"" in cmd:
+			edify.script.remove(cmd)
 	InstallCustImage(info, "boot.img")

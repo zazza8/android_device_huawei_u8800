@@ -163,3 +163,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # USB Interface
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 	persist.sys.usb.config=mtp
+
+# Recovery
+PRODUCT_PROPERTY_OVERRIDES += \
+	ro.cwm.forbid_format=/boot,/recovery
