@@ -30,7 +30,10 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.telephony.cdma.CdmaInformationRecords;
-import com.android.internal.telephony.DataConnection.FailCause;
+import com.android.internal.telephony.dataconnection.DcFailCause;
+import com.android.internal.telephony.dataconnection.DataCallResponse;
+import com.android.internal.telephony.uicc.IccCardApplicationStatus;
+import com.android.internal.telephony.uicc.IccCardStatus;
 
 import java.util.ArrayList;
 
@@ -97,15 +100,15 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         RILRequest rr
                 = RILRequest.obtain(RIL_REQUEST_SIM_IO, result);
 
-        rr.mp.writeString(aid);
-        rr.mp.writeInt(command);
-        rr.mp.writeInt(fileid);
-        rr.mp.writeString(path);
-        rr.mp.writeInt(p1);
-        rr.mp.writeInt(p2);
-        rr.mp.writeInt(p3);
-        rr.mp.writeString(data);
-        rr.mp.writeString(pin2);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeInt(command);
+        rr.mParcel.writeInt(fileid);
+        rr.mParcel.writeString(path);
+        rr.mParcel.writeInt(p1);
+        rr.mParcel.writeInt(p2);
+        rr.mParcel.writeInt(p3);
+        rr.mParcel.writeString(data);
+        rr.mParcel.writeString(pin2);
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> iccIO: "
                 + requestToString(rr.mRequest)
@@ -127,8 +130,8 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(pin);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(pin);
 
         send(rr);
     }
@@ -141,9 +144,9 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(puk);
-        rr.mp.writeString(newPin);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(puk);
+        rr.mParcel.writeString(newPin);
 
         send(rr);
     }
@@ -157,8 +160,8 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(pin);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(pin);
 
         send(rr);
     }
@@ -172,9 +175,9 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(puk);
-        rr.mp.writeString(newPin2);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(puk);
+        rr.mParcel.writeString(newPin2);
 
         send(rr);
     }
@@ -188,9 +191,9 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(oldPin);
-        rr.mp.writeString(newPin);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(oldPin);
+        rr.mParcel.writeString(newPin);
 
         send(rr);
     }
@@ -204,9 +207,9 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeString(aid);
-        rr.mp.writeString(oldPin2);
-        rr.mp.writeString(newPin2);
+        rr.mParcel.writeString(aid);
+        rr.mParcel.writeString(oldPin2);
+        rr.mParcel.writeString(newPin2);
 
         send(rr);
     }
@@ -218,8 +221,8 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
-        rr.mp.writeInt(3);
-        rr.mp.writeString(netpin);
+        rr.mParcel.writeInt(3);
+        rr.mParcel.writeString(netpin);
 
         send(rr);
     }
@@ -229,7 +232,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
     getIMSIForApp(String aid, Message result) {
         RILRequest rr = RILRequest.obtain(RIL_REQUEST_GET_IMSI, result);
 
-        rr.mp.writeString(aid);
+        rr.mParcel.writeString(aid);
 
         if (RILJ_LOGD) riljLog(rr.serialString() +
                               "> getIMSI: " + requestToString(rr.mRequest)
@@ -247,14 +250,14 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
         // count strings
-        rr.mp.writeInt(4);
+        rr.mParcel.writeInt(4);
 
-        rr.mp.writeString(aid);
+        rr.mParcel.writeString(aid);
 
-        rr.mp.writeString(facility);
-        rr.mp.writeString(password);
+        rr.mParcel.writeString(facility);
+        rr.mParcel.writeString(password);
 
-        rr.mp.writeString(Integer.toString(serviceClass));
+        rr.mParcel.writeString(Integer.toString(serviceClass));
 
         send(rr);
     }
@@ -270,22 +273,22 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
 
         // count strings
-        rr.mp.writeInt(5);
+        rr.mParcel.writeInt(5);
 
-        rr.mp.writeString(aid);
+        rr.mParcel.writeString(aid);
 
-        rr.mp.writeString(facility);
+        rr.mParcel.writeString(facility);
         lockString = (lockState)?"1":"0";
-        rr.mp.writeString(lockString);
-        rr.mp.writeString(password);
-        rr.mp.writeString(Integer.toString(serviceClass));
+        rr.mParcel.writeString(lockString);
+        rr.mParcel.writeString(password);
+        rr.mParcel.writeString(Integer.toString(serviceClass));
 
         send(rr);
 
     }
 
     @Override
-    protected void
+    protected RILRequest
     processSolicited (Parcel p) {
         int serial, error;
 
@@ -299,7 +302,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         if (rr == null) {
             Log.w(LOG_TAG, "Unexpected solicited response! sn: "
                             + serial + " error: " + error);
-            return;
+            return null;
         }
 
         Object ret = null;
@@ -443,15 +446,13 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
                     AsyncResult.forMessage(rr.mResult, null, tr);
                     rr.mResult.sendToTarget();
                 }
-                rr.release();
-                return;
+                return rr;
             }
         }
 
         if (error != 0) {
             rr.onError(error, ret);
-            rr.release();
-            return;
+            return rr;
         }
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "< " + requestToString(rr.mRequest)
@@ -462,7 +463,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
             rr.mResult.sendToTarget();
         }
 
-        rr.release();
+        return rr;
     }
 
     @Override
@@ -643,7 +644,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
                 if (RILJ_LOGD) unsljLogRet(response, ret);
 
                 boolean oldRil = needsOldRilFeature("skipbrokendatacall");
-                if (oldRil && "IP".equals(((ArrayList<DataCallState>)ret).get(0).type))
+                if (oldRil && "IP".equals(((ArrayList<DataCallResponse>)ret).get(0).type))
                     break;
 
                 mDataNetworkStateRegistrants.notifyRegistrants(new AsyncResult(null, ret, null));
@@ -890,15 +891,15 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         RILRequest rr
                 = RILRequest.obtain(RIL_REQUEST_SETUP_DATA_CALL, result);
 
-        rr.mp.writeInt(7);
+        rr.mParcel.writeInt(7);
 
-        rr.mp.writeString(radioTechnology);
-        rr.mp.writeString(profile);
-        rr.mp.writeString(apn);
-        rr.mp.writeString(user);
-        rr.mp.writeString(password);
-        rr.mp.writeString(authType);
-        rr.mp.writeString("IP"); // ipVersion
+        rr.mParcel.writeString(radioTechnology);
+        rr.mParcel.writeString(profile);
+        rr.mParcel.writeString(apn);
+        rr.mParcel.writeString(user);
+        rr.mParcel.writeString(password);
+        rr.mParcel.writeString(authType);
+        rr.mParcel.writeString("IP"); // ipVersion
 
         if (RILJ_LOGD) riljLog(rr.serialString() + "> "
                 + requestToString(rr.mRequest) + " " + radioTechnology + " "
@@ -911,14 +912,14 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
     @Override
     protected Object
     responseDataCallList(Parcel p) {
-        ArrayList<DataCallState> response;
+        ArrayList<DataCallResponse> response;
         int ver = 3;
         int num = p.readInt();
         riljLog("responseDataCallList ver=" + ver + " num=" + num);
 
-        response = new ArrayList<DataCallState>(num);
+        response = new ArrayList<DataCallResponse>(num);
         for (int i = 0; i < num; i++) {
-            response.add(getDataCallState(p, ver));
+            response.add(getDataCallResponse(p, ver));
         }
 
         return response;
@@ -927,12 +928,12 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
     @Override
     protected Object
     responseSetupDataCall(Parcel p) {
-        DataCallState dataCall = new DataCallState();
+        DataCallResponse dataCall = new DataCallResponse();
         String response[] = (String []) responseStrings(p);
 
         if (response.length >= 2)
         {
-            dataCall = new DataCallState();
+            dataCall = new DataCallResponse();
             dataCall.version = 3;
             dataCall.cid = Integer.parseInt(response[0]);
             dataCall.ifname = response[1];
@@ -951,14 +952,14 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         }
         else
         {
-            dataCall.status = FailCause.ERROR_UNSPECIFIED.getErrorCode();
+            dataCall.status = DcFailCause.ERROR_UNSPECIFIED.getErrorCode();
         }
         return dataCall;
     }
 
     @Override
-    protected DataCallState getDataCallState(Parcel p, int version) {
-        DataCallState dataCall = new DataCallState();
+    protected DataCallResponse getDataCallResponse(Parcel p, int version) {
+        DataCallResponse dataCall = new DataCallResponse();
 
         dataCall.version = version;
         dataCall.cid = p.readInt();
@@ -969,7 +970,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         if (!TextUtils.isEmpty(addresses)) {
             dataCall.addresses = addresses.split(" ");
         }
-        // DataCallState needs an ifname. Since we don't have one use the name from the ThrottleService resource (default=rmnet0).
+        // DataCallResponse needs an ifname. Since we don't have one use the name from the ThrottleService resource (default=rmnet0).
         dataCall.ifname = Resources.getSystem().getString(com.android.internal.R.string.config_datause_iface);
 
         p.readInt(); // RadioTechnology
