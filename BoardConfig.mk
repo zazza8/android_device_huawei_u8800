@@ -110,6 +110,7 @@ BOARD_VOLD_MAX_PARTITIONS := 14
 
 # Recovery
 BOARD_HAS_NO_SELECT_BUTTON := true
+BOARD_RECOVERY_SWIPE := true
 TARGET_RECOVERY_FSTAB := device/huawei/u8800/fstab.qcom
 
 # Flags
