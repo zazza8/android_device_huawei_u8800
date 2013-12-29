@@ -96,7 +96,7 @@ BOARD_VENDOR_QCOM_GPS_LOC_API_AMSS_VERSION := 50000
 TARGET_NO_KERNEL := false
 TARGET_KERNEL_SOURCE := kernel/huawei/u8800
 TARGET_KERNEL_CONFIG := u8800_defconfig
-BOARD_KERNEL_CMDLINE := console=ttyDCC0 androidboot.hardware=qcom
+BOARD_KERNEL_CMDLINE := console=ttyDCC0 androidboot.hardware=qcom androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x00200000
 BOARD_KERNEL_PAGESIZE := 4096
 
