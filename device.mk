@@ -91,7 +91,9 @@ PRODUCT_PACKAGES += \
 
 # Audio
 PRODUCT_PACKAGES += \
-	libaudioutils
+	libaudio-resampler \
+	libaudioutils \
+	libdashplayer
 
 # HAL
 PRODUCT_PACKAGES += \
