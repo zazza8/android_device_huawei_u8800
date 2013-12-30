@@ -103,7 +103,7 @@ PRODUCT_PACKAGES += \
 	gralloc.msm7x30 \
 	hwcomposer.msm7x30 \
 	lights.msm7x30 \
-	power.qcom \
+	power.msm7x30 \
 	sensors.u8800 \
 	gps.u8800
 
