@@ -69,7 +69,8 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/configs/audio_policy.conf:system/etc/audio_policy.conf \
 	$(LOCAL_PATH)/configs/media_codecs.xml:system/etc/media_codecs.xml \
 	$(LOCAL_PATH)/configs/media_profiles.xml:system/etc/media_profiles.xml \
-	$(LOCAL_PATH)/configs/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf
+	$(LOCAL_PATH)/configs/wpa_supplicant_overlay.conf:system/etc/wifi/wpa_supplicant_overlay.conf \
+	$(LOCAL_PATH)/configs/p2p_supplicant_overlay.conf:system/etc/wifi/p2p_supplicant_overlay.conf
 
 # Graphics
 PRODUCT_PACKAGES += \
