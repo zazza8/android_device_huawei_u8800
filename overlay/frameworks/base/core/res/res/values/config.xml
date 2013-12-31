@@ -164,4 +164,6 @@
         <item>240</item>  <!-- 1800 - 2000 -->
         <item>255</item>  <!-- 2000+ -->
     </integer-array>
+
+    <bool name="config_deviceHasVariableButtonBrightness">true</bool>
 </resources>
