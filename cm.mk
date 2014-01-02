@@ -21,6 +21,9 @@ $(call inherit-product, vendor/cm/config/gsm.mk)
 TARGET_SCREEN_HEIGHT := 800
 TARGET_SCREEN_WIDTH := 480
 
+# Custom tag for unofficial builds
+TARGET_UNOFFICIAL_BUILD_ID := Blefish
+
 # Inherit some common CM stuff.
 $(call inherit-product, vendor/cm/config/common_full_phone.mk)
 
