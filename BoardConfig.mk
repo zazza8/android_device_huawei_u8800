@@ -120,3 +120,5 @@ TARGET_GLOBAL_CFLAGS += -mfpu=neon -mfloat-abi=softfp
 TARGET_GLOBAL_CPPFLAGS += -mfpu=neon -mfloat-abi=softfp
 
 TARGET_RELEASETOOLS_EXTENSIONS := device/huawei/u8800
+
+BOARD_HARDWARE_CLASS := device/huawei/u8800/cmhw/

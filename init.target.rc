@@ -30,7 +30,11 @@
 on init
     # Device Settings
     chown system system /sys/devices/platform/msm_otg/mode
-    chown system system /sys/class/timed_output/vibrator/voltage_level
+
+    # Hardware tunables
+    chown root system /sys/class/timed_output/vibrator/voltage_level
+    chmod 0664 /sys/class/timed_output/vibrator/voltage_level
+    restorecon /sys/class/timed_output/vibrator/voltage_level
 
     mkdir /cust
 
