@@ -4,8 +4,6 @@
 
     <!-- Settings for General -->
 
-    <string name="pref_vibrator_title">Titreşim Gücü</string>
-    <string name="pref_vibrator_summary">Şu anki voltaj: %d mV</string>
 
     <!-- Settings for USB -->
     <string name="pref_header_usb">USB</string>

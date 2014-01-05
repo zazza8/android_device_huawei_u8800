@@ -43,8 +43,6 @@ public class Startup extends BroadcastReceiver {
     public static void restore(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
-        DeviceSettings.setVariables(context);
-
         Boolean value;
         /**
          * No need to write the host setting when the default value is set (peripheral).
@@ -55,8 +53,5 @@ public class Startup extends BroadcastReceiver {
 
         value = prefs.getBoolean(DeviceSettings.AUDIO_INTERNALMIC_STATE, false);
         AudioSettings.writeInternalmicForced(context, value);
-
-        int voltage = prefs.getInt(DeviceSettings.VIBRATOR_INTENSITY, VibratorSettings.DEF_VALUE);
-        VibratorSettings.writeVoltage(voltage);
     }
 }

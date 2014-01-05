@@ -1,7 +1,0 @@
-<resources>
-
-    <!-- Values related to Vibrator -->
-    <string name="vib_def_voltage">3000</string>
-    <string name="vib_min_voltage">1200</string>
-    <string name="vib_max_voltage">3100</string>
-</resources>
