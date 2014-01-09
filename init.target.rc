@@ -44,9 +44,6 @@ on fs
 on post-fs-data
     mkdir /data/misc/sensors 0770 system system
 
-on property:sys.radio.shutdown=true
-   exec /system/bin/sh /system/etc/init.qcom.efs.sync.sh
-
 # SDC3 (SDIO) needs to have polling enabled
 on property:wlan.driver.status=loading
     write /sys/devices/platform/msm_sdcc.3/polling 1

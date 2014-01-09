@@ -164,6 +164,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	ril.subscription.types=NV,RUIM \
 	ro.telephony.ril_class=GBQualcommRIL
 
+# Wi-Fi
+PRODUCT_PROPERTY_OVERRIDES += \
+	wifi.interface=wlan0
+
 # Bluetooth
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.bt.bdaddr_path=/data/misc/bluedroid/bdaddr
