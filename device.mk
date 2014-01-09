@@ -146,7 +146,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	debug.mdpcomp.logs=0
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.opengles.version=131072
+	ro.opengles.version=131072
 
 # RIL
 PRODUCT_PROPERTY_OVERRIDES += \
