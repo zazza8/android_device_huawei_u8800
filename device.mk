@@ -149,6 +149,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.opengles.version=131072
 
+# Video
+PRODUCT_PROPERTY_OVERRIDES += \
+	persist.camera.mem.usecache=0 \
+	persist.video.mem.usecache=0
+
 # RIL
 PRODUCT_PROPERTY_OVERRIDES += \
 	rild.libpath=/system/lib/libril-qc-1.so \
