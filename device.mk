@@ -143,7 +143,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
 	debug.composition.type=gpu \
 	persist.hwc.mdpcomp.enable=false \
 	debug.mdpcomp.maxlayer=3 \
-	debug.mdpcomp.logs=0
+	debug.mdpcomp.logs=0 \
+	debug.hwc.dynThreshold=1.9
 
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.opengles.version=131072
