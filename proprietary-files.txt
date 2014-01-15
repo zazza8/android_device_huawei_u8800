@@ -31,7 +31,6 @@ system/bin/qmuxd
 system/lib/libril-qc-1.so
 
 # RIL Prebuilt
-system/bin/rild
 system/lib/libril.so
 
 # RIL Dependencies
