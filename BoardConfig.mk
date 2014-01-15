@@ -67,6 +67,7 @@ TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
 
 # Radio class.
+BOARD_PROVIDES_LIBRIL := true
 BOARD_RIL_CLASS := ../../../device/huawei/u8800/ril/
 
 # Wi-Fi
