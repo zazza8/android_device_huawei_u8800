@@ -27,7 +27,7 @@ import android.os.SystemProperties;
 import android.telephony.SignalStrength;
 import android.telephony.SmsMessage;
 import android.text.TextUtils;
-import android.util.Log;
+import android.telephony.Rlog;
 
 import com.android.internal.telephony.cdma.CdmaInformationRecords;
 import com.android.internal.telephony.dataconnection.DcFailCause;
@@ -300,7 +300,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         rr = findAndRemoveRequestFromList(serial);
 
         if (rr == null) {
-            Log.w(LOG_TAG, "Unexpected solicited response! sn: "
+            Rlog.w(RILJ_LOG_TAG, "Unexpected solicited response! sn: "
                             + serial + " error: " + error);
             return null;
         }
@@ -438,7 +438,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
             }} catch (Throwable tr) {
                 // Exceptions here usually mean invalid RIL responses
 
-                Log.w(LOG_TAG, rr.serialString() + "< "
+                Rlog.w(RILJ_LOG_TAG, rr.serialString() + "< "
                         + requestToString(rr.mRequest)
                         + " exception, possible invalid RIL response", tr);
 
@@ -522,7 +522,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
                 throw new RuntimeException("Unrecognized unsol response: " + response);
             //break; (implied)
         }} catch (Throwable tr) {
-            Log.e(LOG_TAG, "Exception processing unsol response: " + response +
+            Rlog.e(RILJ_LOG_TAG, "Exception processing unsol response: " + response +
                 "Exception:" + tr.toString());
             return;
         }
@@ -797,7 +797,7 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
                 try {
                     listInfoRecs = (ArrayList<CdmaInformationRecords>)ret;
                 } catch (ClassCastException e) {
-                    Log.e(LOG_TAG, "Unexpected exception casting to listInfoRecs", e);
+                    Rlog.e(RILJ_LOG_TAG, "Unexpected exception casting to listInfoRecs", e);
                     break;
                 }
 
