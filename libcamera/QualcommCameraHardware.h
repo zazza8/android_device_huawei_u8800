@@ -534,7 +534,7 @@ private:
     int mBrightness;
     int mSkinToneEnhancement;
     int mHJR;
-    unsigned int mThumbnailMapped[MAX_SNAPSHOT_BUFFERS];
+    void *mThumbnailMapped[MAX_SNAPSHOT_BUFFERS];
     unsigned int mThumbnailLockState[MAX_SNAPSHOT_BUFFERS];
     int mRawfd[MAX_SNAPSHOT_BUFFERS];
     int mRawSnapshotfd;

@@ -44,7 +44,7 @@ static hw_module_methods_t camera_module_methods = {
 };
 
 
-static hw_module_t camera_common  = {
+static hw_module_t camera_common = {
   tag: HARDWARE_MODULE_TAG,
   module_api_version: CAMERA_MODULE_API_VERSION_1_0,
   hal_api_version: HARDWARE_HAL_API_VERSION,
@@ -53,13 +53,16 @@ static hw_module_t camera_common  = {
   author:"Qcom",
   methods: &camera_module_methods,
   dso: NULL,
-  //reserved[0]:  0,
+  reserved: {0},
 };
 
 camera_module_t HAL_MODULE_INFO_SYM = {
   common: camera_common,
   get_number_of_cameras: get_number_of_cameras,
   get_camera_info: get_camera_info,
+  set_callbacks: NULL,
+  get_vendor_tag_ops: NULL,
+  reserved: {0},
 };
 
 camera_device_ops_t camera_ops = {
@@ -418,35 +421,12 @@ void set_callbacks(struct camera_device * device,
   if(hardware != NULL){
     camera_hardware_t *camHal = (camera_hardware_t *)device->priv;
     if(camHal) {
-      camera_notify_callback cam_nt_cb;
-      camera_data_callback cam_dt_cb;
-      camera_data_timestamp_callback cam_dt_timestamp_cb;
-
       camHal->notify_cb = notify_cb;
       camHal->data_cb = data_cb;
       camHal->data_cb_timestamp = data_cb_timestamp;
       camHal->user_data = user;
       camHal->get_memory = get_memory;
-      #if 0
-      if(notify_cb) {
-        cam_nt_cb = cam_notify_callback;
-      } else {
-        cam_nt_cb = NULL;
-      }
 
-      if(data_cb) {
-        cam_dt_cb = cam_data_callback;
-      } else {
-        cam_dt_cb = NULL;
-      }
-
-      if(data_cb_timestamp) {
-        cam_dt_timestamp_cb = cam_data_callback_timestamp;
-      } else {
-        cam_dt_timestamp_cb = NULL;
-      }
-      #endif
-      ALOGE("cam_nt_cb =%p,cam_dt_cb=%p,cam_dt_timestamp_cb=%p",  cam_nt_cb, cam_dt_cb, cam_dt_timestamp_cb);
       hardware->setCallbacks(notify_cb,data_cb,data_cb_timestamp,get_memory, user);
     }
   }
