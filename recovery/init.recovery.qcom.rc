@@ -28,10 +28,10 @@
 #
 
 on boot
-    # Disable frambuffer alignment
+    # Disable framebuffer alignment
     write /sys/module/msm_fb/parameters/align_buffer 0
 
-    # Set brightnes for LCD and buttons
+    # Set brightness for LCD and buttons
     write /sys/class/leds/lcd-backlight/brightness 127
     write /sys/class/leds/button-backlight/brightness 127
 
