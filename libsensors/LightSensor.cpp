@@ -192,6 +192,7 @@ void LightSensor::configureRange(uint16_t adc_count)
     if (!settings.allow_reconfig)
         return;
 
+    struct aps_12d_settings new_settings = settings;
     bool increase;
 
     if (adc_count <= RANGE_DEC_THRESHOLD)
@@ -201,15 +202,17 @@ void LightSensor::configureRange(uint16_t adc_count)
     else
         return;
 
-    if (increase && settings.range != APS_12D_RANGE_15P36_TO_64000)
-        settings.range = static_cast<aps_12d_range>(settings.range + 1);
-    else if (!increase && settings.range != APS_12D_RANGE_0P24_TO_1000)
-        settings.range = static_cast<aps_12d_range>(settings.range - 1);
+    if (increase && new_settings.range != APS_12D_RANGE_15P36_TO_64000)
+        new_settings.range = static_cast<aps_12d_range>(new_settings.range + 1);
+    else if (!increase && new_settings.range != APS_12D_RANGE_0P24_TO_1000)
+        new_settings.range = static_cast<aps_12d_range>(new_settings.range - 1);
     else
         return;
 
-    ALOGD_IF(LIGHT_DEBUG, "LightSensor: New range %d", settings.range);
+    ALOGD_IF(LIGHT_DEBUG, "LightSensor: New range %d", new_settings.range);
 
-    if (ioctl(dev_fd, APS_IOCTL_SET_SETTINGS, &settings))
-        ALOGE("LightSensor: Failed to set settings");
+    if (ioctl(dev_fd, APS_IOCTL_SET_SETTINGS, &new_settings))
+        ALOGE("LightSensor: Failed to set new settings");
+    else
+        settings = new_settings;
 }
