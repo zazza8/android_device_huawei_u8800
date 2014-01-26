@@ -46,7 +46,6 @@ struct buffer_map {
     msm_frame *frame;
     buffer_handle_t * buffer;
     int size;
-    int lockState;
 };
 
 typedef enum {
@@ -535,7 +534,6 @@ private:
     int mSkinToneEnhancement;
     int mHJR;
     void *mThumbnailMapped[MAX_SNAPSHOT_BUFFERS];
-    unsigned int mThumbnailLockState[MAX_SNAPSHOT_BUFFERS];
     int mRawfd[MAX_SNAPSHOT_BUFFERS];
     int mRawSnapshotfd;
     int mJpegfd[MAX_SNAPSHOT_BUFFERS];

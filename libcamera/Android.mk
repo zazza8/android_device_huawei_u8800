@@ -31,17 +31,15 @@ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 LOCAL_ADDITIONAL_DEPENDENCIES := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 LOCAL_C_INCLUDES += \
     hardware/qcom/display-$(TARGET_QCOM_DISPLAY_VARIANT)/libgralloc \
-    hardware/qcom/display-$(TARGET_QCOM_DISPLAY_VARIANT)/libgenlock \
     hardware/qcom/media/libstagefrighthw
 
 LOCAL_SHARED_LIBRARIES := \
+    libbinder \
     libcamera_client \
     libcutils \
     liblog \
     libui \
     libutils
-
-LOCAL_SHARED_LIBRARIES += libgenlock libbinder
 
 ifeq ($(DLOPEN_LIBMMCAMERA),1)
     LOCAL_SHARED_LIBRARIES += libdl

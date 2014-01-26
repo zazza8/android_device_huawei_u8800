@@ -42,7 +42,6 @@
 #include <camera/CameraParameters.h>
 #include <media/mediarecorder.h>
 #include <gralloc_priv.h>
-#include <genlock.h>
 
 #include "linux/msm_mdp.h"
 #include <linux/fb.h>
@@ -2990,18 +2989,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
            // TODO : may have to reutn proper frame as pcb
            mDisplayLock.lock();
            if( mPreviewWindow != NULL) {
-                if (BUFFER_LOCKED == frame_buffer[bufferIndex].lockState) {
-                    if (GENLOCK_FAILURE == genlock_unlock_buffer(
-                           (native_handle_t*)(*(frame_buffer[bufferIndex].buffer)))) {
-                       ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                       mDisplayLock.unlock();
-                    } else {
-                       frame_buffer[bufferIndex].lockState = BUFFER_UNLOCKED;
-                    }
-                } else {
-                    ALOGE("%s: buffer to be enqueued is unlocked", __FUNCTION__);
-                    mDisplayLock.unlock();
-                }
              const char *str = mParameters.get(CameraParameters::KEY_VIDEO_HIGH_FRAME_RATE);
              if(str != NULL){
                  int is_hfr_off = 0;
@@ -3117,13 +3104,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
         bufferIndex = mapFrame(handle);
         if(bufferIndex >= 0) {
            LINK_camframe_add_frame(CAM_PREVIEW_FRAME, &frames[bufferIndex]);
-           private_handle_t *bhandle = (private_handle_t *)(*handle);
-           if (GENLOCK_NO_ERROR != genlock_lock_buffer(bhandle, GENLOCK_WRITE_LOCK, GENLOCK_MAX_TIMEOUT)) {
-                ALOGE("%s: genlock_lock_buffer(WRITE) failed", __FUNCTION__);
-                frame_buffer[bufferIndex].lockState = BUFFER_UNLOCKED;
-           } else {
-                frame_buffer[bufferIndex].lockState = BUFFER_LOCKED;
-           }
         } else {
           ALOGE("Could not find the Frame");
 
@@ -3260,15 +3240,7 @@ void QualcommCameraHardware::runHFRThread(void *data)
                 ALOGV("%s:  Cancelling postview buffer %d ", __FUNCTION__, handle->fd);
                 ALOGV("runHfrThread : display lock");
                 mDisplayLock.lock();
-                if (BUFFER_LOCKED == mThumbnailLockState[cnt]) {
-                    if (GENLOCK_FAILURE == genlock_unlock_buffer(handle)) {
-                       ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                       mDisplayLock.unlock();
-                       continue;
-                    } else {
-                       mThumbnailLockState[cnt] = BUFFER_UNLOCKED;
-                    }
-                }
+
                 status_t retVal = mPreviewWindow->cancel_buffer(mPreviewWindow,
                                                               mThumbnailBuffer[cnt]);
                 if(retVal != NO_ERROR)
@@ -4225,14 +4197,7 @@ bool QualcommCameraHardware::createSnapshotMemory (int numberOfRawBuffers, int n
                     mDisplayLock.unlock();
                     return false;
                 }
-                if (GENLOCK_NO_ERROR != genlock_lock_buffer((native_handle_t*)(*mThumbnailBuffer[cnt]),
-                                                           GENLOCK_WRITE_LOCK, GENLOCK_MAX_TIMEOUT)) {
-                    ALOGE("%s: genlock_lock_buffer(WRITE) failed", __FUNCTION__);
-                    mDisplayLock.unlock();
-                    return -EINVAL;
-                } else {
-                    mThumbnailLockState[cnt] = BUFFER_LOCKED;
-                }
+
                 mDisplayLock.unlock();
                 ALOGE("createsnapshotbuffers : display unlock");
             }
@@ -4572,13 +4537,7 @@ void QualcommCameraHardware::deinitRaw()
                 ALOGE("%s:  Cancelling postview buffer %d ", __FUNCTION__, handle->fd);
                 ALOGE("deinitraw : display lock");
                 mDisplayLock.lock();
-                if (BUFFER_LOCKED == mThumbnailLockState[cnt]) {
-                    if (GENLOCK_FAILURE == genlock_unlock_buffer(handle)) {
-                       ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                    } else {
-                       mThumbnailLockState[cnt] = BUFFER_UNLOCKED;
-                    }
-                }
+
                 status_t retVal = mPreviewWindow->cancel_buffer(mPreviewWindow,
                                                               mThumbnailBuffer[cnt]);
                 if(retVal != NO_ERROR)
@@ -4625,15 +4584,6 @@ void QualcommCameraHardware::relinquishBuffers()
     mDisplayLock.lock();
     if( mPreviewWindow != NULL) {
       for(int cnt = 0; cnt < mTotalPreviewBufferCount; cnt++) {
-         if (BUFFER_LOCKED == frame_buffer[cnt].lockState) {
-            ALOGE(" Cancelling preview buffers %d ",frames[cnt].fd);
-            if (GENLOCK_FAILURE == genlock_unlock_buffer((native_handle_t *)
-                                              (*(frame_buffer[cnt].buffer)))) {
-                ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-            } else {
-                frame_buffer[cnt].lockState = BUFFER_UNLOCKED;
-            }
-         }
          retVal = mPreviewWindow->cancel_buffer(mPreviewWindow,
 	                         frame_buffer[cnt].buffer);
          mPreviewMapped[cnt]->release(mPreviewMapped[cnt]);
@@ -4764,12 +4714,6 @@ status_t QualcommCameraHardware::getBuffersAndStartPreview() {
                 ALOGV(" Locking buffer %d ", cnt);
                 retVal = mPreviewWindow->lock_buffer(mPreviewWindow,
                                             bhandle);
-                // lock the buffer using genlock
-                if (GENLOCK_NO_ERROR != genlock_lock_buffer((native_handle_t *)(*bhandle),
-                                                      GENLOCK_WRITE_LOCK, GENLOCK_MAX_TIMEOUT)) {
-                    ALOGE("%s: genlock_lock_buffer(WRITE) failed", __FUNCTION__);
-                    return -EINVAL;
-                }
                 ALOGE(" Locked buffer %d successfully", cnt);
 	//yyan todo use handle to find out mPreviewBuffer
 
@@ -4813,7 +4757,6 @@ status_t QualcommCameraHardware::getBuffersAndStartPreview() {
                   frame_buffer[cnt].frame = &frames[cnt];
                   frame_buffer[cnt].buffer = bhandle;
                   frame_buffer[cnt].size = handle->size;
-                  frame_buffer[cnt].lockState = BUFFER_LOCKED;
                   active = (cnt < ACTIVE_PREVIEW_BUFFERS);
 
                   ALOGE("Registering buffer %d with fd :%d with kernel",cnt,handle->fd);
@@ -4851,11 +4794,6 @@ status_t QualcommCameraHardware::getBuffersAndStartPreview() {
 
         // Cancel minUndequeuedBufs.
         for (cnt = kPreviewBufferCount; cnt < mTotalPreviewBufferCount; cnt++) {
-            if (GENLOCK_FAILURE == genlock_unlock_buffer((native_handle_t*)(*(frame_buffer[cnt].buffer)))) {
-                ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                return -EINVAL;
-            }
-            frame_buffer[cnt].lockState = BUFFER_UNLOCKED;
             status_t retVal = mPreviewWindow->cancel_buffer(mPreviewWindow,
                                 frame_buffer[cnt].buffer);
             ALOGE(" Cancelling preview buffers %d ",frame_buffer[cnt].frame->fd);
@@ -5385,15 +5323,7 @@ void QualcommCameraHardware::stopPreview()
                 ALOGE("%s:  Cancelling postview buffer %d ", __FUNCTION__, handle->fd);
                 ALOGE("stoppreview : display lock");
                 mDisplayLock.lock();
-                if (BUFFER_LOCKED == mThumbnailLockState[cnt]) {
-                    if (GENLOCK_FAILURE == genlock_unlock_buffer(handle)) {
-                       ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                       mDisplayLock.unlock();
-                       continue;
-                    } else {
-                       mThumbnailLockState[cnt] = BUFFER_UNLOCKED;
-                    }
-                }
+
                 status_t retVal = mPreviewWindow->cancel_buffer(mPreviewWindow,
                                                               mThumbnailBuffer[cnt]);
                 ALOGE("stopPreview : after cancelling thumbnail buffer");
@@ -7425,15 +7355,6 @@ void QualcommCameraHardware::receiveRawPicture(status_t status,struct msm_frame 
             handle = (private_handle_t *)(*mThumbnailBuffer[index]);
             ALOGV("%s: Queueing postview buffer for display %d",
                                            __FUNCTION__,handle->fd);
-            if (BUFFER_LOCKED == mThumbnailLockState[index]) {
-                if (GENLOCK_FAILURE == genlock_unlock_buffer(handle)) {
-                    ALOGE("%s: genlock_unlock_buffer failed", __FUNCTION__);
-                    mDisplayLock.unlock();
-                    return;
-                } else {
-                     mThumbnailLockState[index] = BUFFER_UNLOCKED;
-                }
-            }
             status_t retVal = mPreviewWindow->enqueue_buffer(mPreviewWindow,
                                                          mThumbnailBuffer[index]);
             ALOGE(" enQ thumbnailbuffer");
