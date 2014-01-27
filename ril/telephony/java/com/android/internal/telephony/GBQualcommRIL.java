@@ -53,19 +53,28 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
         status.setUniversalPinState(p.readInt());
 
         int num_current_3gpp_indexes = p.readInt();
+        if (num_current_3gpp_indexes == 0)
+            status.mGsmUmtsSubscriptionAppIndex = -1;
+
         for (int i = 0; i < num_current_3gpp_indexes; i++) {
             if (i == 0)
                 status.mGsmUmtsSubscriptionAppIndex = p.readInt();
             else
                 p.readInt();
         }
+
         int num_current_3gpp2_indexes = p.readInt();
+        if (num_current_3gpp_indexes == 0)
+            status.mCdmaSubscriptionAppIndex = -1;
+
         for (int i = 0; i < num_current_3gpp2_indexes; i++) {
             if (i == 0)
                 status.mCdmaSubscriptionAppIndex = p.readInt();
             else
                 p.readInt();
         }
+
+        status.mImsSubscriptionAppIndex = -1;
 
         int numApplications = p.readInt();
 
