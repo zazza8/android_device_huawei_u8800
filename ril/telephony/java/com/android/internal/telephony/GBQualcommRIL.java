@@ -459,19 +459,50 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
             }
         }
 
+        // Here and below fake RIL_UNSOL_RESPONSE_SIM_STATUS_CHANGED, see b/7255789.
+        // This is needed otherwise we don't automatically transition to the main lock
+        // screen when the pin or puk is entered incorrectly.
+        switch (rr.mRequest) {
+            case RIL_REQUEST_ENTER_SIM_PUK:
+            case RIL_REQUEST_ENTER_SIM_PUK2:
+                if (mIccStatusChangedRegistrants != null) {
+                    if (RILJ_LOGD) {
+                        riljLog("ON enter sim puk fakeSimStatusChanged: reg count="
+                                + mIccStatusChangedRegistrants.size());
+                    }
+                    mIccStatusChangedRegistrants.notifyRegistrants();
+                }
+                break;
+        }
+
         if (error != 0) {
+            switch (rr.mRequest) {
+                case RIL_REQUEST_ENTER_SIM_PIN:
+                case RIL_REQUEST_ENTER_SIM_PIN2:
+                case RIL_REQUEST_CHANGE_SIM_PIN:
+                case RIL_REQUEST_CHANGE_SIM_PIN2:
+                case RIL_REQUEST_SET_FACILITY_LOCK:
+                    if (mIccStatusChangedRegistrants != null) {
+                        if (RILJ_LOGD) {
+                            riljLog("ON some errors fakeSimStatusChanged: reg count="
+                                    + mIccStatusChangedRegistrants.size());
+                        }
+                        mIccStatusChangedRegistrants.notifyRegistrants();
+                    }
+                    break;
+            }
+
             rr.onError(error, ret);
-            return rr;
+        } else {
+
+            if (RILJ_LOGD) riljLog(rr.serialString() + "< " + requestToString(rr.mRequest)
+                    + " " + retToString(rr.mRequest, ret));
+
+            if (rr.mResult != null) {
+                AsyncResult.forMessage(rr.mResult, ret, null);
+                rr.mResult.sendToTarget();
+            }
         }
-
-        if (RILJ_LOGD) riljLog(rr.serialString() + "< " + requestToString(rr.mRequest)
-            + " " + retToString(rr.mRequest, ret));
-
-        if (rr.mResult != null) {
-            AsyncResult.forMessage(rr.mResult, ret, null);
-            rr.mResult.sendToTarget();
-        }
-
         return rr;
     }
 
