@@ -145,27 +145,29 @@ int ProximitySensor::readEvents(sensors_event_t* data, int count)
 float ProximitySensor::getProxValue(uint16_t adc_count)
 {
     float correct_adc = getCorrectADC(adc_count) * GLASS_MULTIPLIER;
-    float distance = 1.0f;
+    static float distance = 1.0f;
 
     /* Proximity sensing algorithm described in Intersil datasheet.
      * This algorithm has low and high thresholds, which are used to figure out
      * whether the object is near or far. */
-    if (correct_adc >= PROX_3CM_HIGH_THRESHOLD)
+    if (correct_adc >= PROX_HIGH_THRESHOLD)
         distance = 0.0f;
-    else if (correct_adc <= PROX_3CM_LOW_THRESHOLD)
+    else if (correct_adc <= PROX_LOW_THRESHOLD)
         distance = 1.0f;
 
     /* Compare data with previously saved. */
-    int i;
-    for (i = 0; i < PROX_SAMPLES; i++) {
-        if (mSamples[i] != distance)
+    bool data_reliable = true;
+    for (int i = 0; i < PROX_SAMPLES; i++) {
+        if (mSamples[i] != distance) {
+            data_reliable = false;
             break;
+        }
     }
 
     float return_distance;
 
-    /* Only return distance as close when PROX_SAMPLES data matches. */
-    if (i == PROX_SAMPLES && distance == 0.0f)
+    /* Only return distance as close when data is reliable. */
+    if (data_reliable && distance == 0.0f)
         return_distance = distance;
     else
         return_distance = 1.0f;
