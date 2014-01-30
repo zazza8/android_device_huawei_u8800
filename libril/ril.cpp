@@ -52,6 +52,8 @@
 
 #include <ril_event.h>
 
+#include "ril_v4.h"
+
 namespace android {
 
 #define PHONE_PROCESS "radio"
@@ -206,6 +208,7 @@ static void dispatchDataCall (Parcel& p, RequestInfo *pRI);
 static void dispatchVoiceRadioTech (Parcel& p, RequestInfo *pRI);
 static void dispatchSetInitialAttachApn (Parcel& p, RequestInfo *pRI);
 static void dispatchCdmaSubscriptionSource (Parcel& p, RequestInfo *pRI);
+static void dispatchDepersonalization(Parcel &p, RequestInfo *pRI);
 
 static void dispatchCdmaSms(Parcel &p, RequestInfo *pRI);
 static void dispatchImsSms(Parcel &p, RequestInfo *pRI);
@@ -224,7 +227,6 @@ static int responseSMS(Parcel &p, void *response, size_t responselen);
 static int responseSIM_IO(Parcel &p, void *response, size_t responselen);
 static int responseCallForwards(Parcel &p, void *response, size_t responselen);
 static int responseDataCallList(Parcel &p, void *response, size_t responselen);
-static int responseSetupDataCall(Parcel &p, void *response, size_t responselen);
 static int responseRaw(Parcel &p, void *response, size_t responselen);
 static int responseSsn(Parcel &p, void *response, size_t responselen);
 static int responseSimStatus(Parcel &p, void *response, size_t responselen);
@@ -371,7 +373,8 @@ processCommandBuffer(void *buffer, size_t buflen) {
         return 0;
     }
 
-    if (request < 1 || request >= (int32_t)NUM_ELEMS(s_commands)) {
+    if (request < 1 || request >= (int32_t)NUM_ELEMS(s_commands) ||
+        s_commands[request].requestNumber == 0) {
         RLOGE("unsupported request code %d token %d", request, token);
         // FIXME this should perhaps return a response
         return 0;
@@ -705,13 +708,9 @@ invalid:
  */
 static void
 dispatchSIM_IO (Parcel &p, RequestInfo *pRI) {
-    union RIL_SIM_IO {
-        RIL_SIM_IO_v6 v6;
-        RIL_SIM_IO_v5 v5;
-    } simIO;
+    RIL_SIM_IO_v4 simIO;
 
     int32_t t;
-    int size;
     status_t status;
 
     memset (&simIO, 0, sizeof(simIO));
@@ -719,31 +718,31 @@ dispatchSIM_IO (Parcel &p, RequestInfo *pRI) {
     // note we only check status at the end
 
     status = p.readInt32(&t);
-    simIO.v6.command = (int)t;
+    simIO.command = (int)t;
 
     status = p.readInt32(&t);
-    simIO.v6.fileid = (int)t;
+    simIO.fileid = (int)t;
 
-    simIO.v6.path = strdupReadString(p);
-
-    status = p.readInt32(&t);
-    simIO.v6.p1 = (int)t;
+    simIO.path = strdupReadString(p);
 
     status = p.readInt32(&t);
-    simIO.v6.p2 = (int)t;
+    simIO.p1 = (int)t;
 
     status = p.readInt32(&t);
-    simIO.v6.p3 = (int)t;
+    simIO.p2 = (int)t;
 
-    simIO.v6.data = strdupReadString(p);
-    simIO.v6.pin2 = strdupReadString(p);
-    simIO.v6.aidPtr = strdupReadString(p);
+    status = p.readInt32(&t);
+    simIO.p3 = (int)t;
+
+    simIO.data = strdupReadString(p);
+    simIO.pin2 = strdupReadString(p);
+    simIO.aidPtr = strdupReadString(p);
 
     startRequest;
     appendPrintBuf("%scmd=0x%X,efid=0x%X,path=%s,%d,%d,%d,%s,pin2=%s,aid=%s", printBuf,
-        simIO.v6.command, simIO.v6.fileid, (char*)simIO.v6.path,
-        simIO.v6.p1, simIO.v6.p2, simIO.v6.p3,
-        (char*)simIO.v6.data,  (char*)simIO.v6.pin2, simIO.v6.aidPtr);
+        simIO.command, simIO.fileid, (char*)simIO.path,
+        simIO.p1, simIO.p2, simIO.p3,
+        (char*)simIO.data,  (char*)simIO.pin2, simIO.aidPtr);
     closeRequest;
     printRequest(pRI->token, pRI->pCI->requestNumber);
 
@@ -751,20 +750,19 @@ dispatchSIM_IO (Parcel &p, RequestInfo *pRI) {
         goto invalid;
     }
 
-    size = (s_callbacks.version < 6) ? sizeof(simIO.v5) : sizeof(simIO.v6);
-    s_callbacks.onRequest(pRI->pCI->requestNumber, &simIO, size, pRI);
+    s_callbacks.onRequest(pRI->pCI->requestNumber, &simIO, sizeof(simIO), pRI);
 
 #ifdef MEMSET_FREED
-    memsetString (simIO.v6.path);
-    memsetString (simIO.v6.data);
-    memsetString (simIO.v6.pin2);
-    memsetString (simIO.v6.aidPtr);
+    memsetString (simIO.path);
+    memsetString (simIO.data);
+    memsetString (simIO.pin2);
+    memsetString (simIO.aidPtr);
 #endif
 
-    free (simIO.v6.path);
-    free (simIO.v6.data);
-    free (simIO.v6.pin2);
-    free (simIO.v6.aidPtr);
+    free (simIO.path);
+    free (simIO.data);
+    free (simIO.pin2);
+    free (simIO.aidPtr);
 
 #ifdef MEMSET_FREED
     memset(&simIO, 0, sizeof(simIO));
@@ -960,6 +958,50 @@ constructCdmaSms(Parcel &p, RequestInfo *pRI, RIL_CDMA_SMS_Message& rcsm) {
     printRequest(pRI->token, pRI->pCI->requestNumber);
 
     return status;
+}
+
+static void
+dispatchDepersonalization(Parcel &p, RequestInfo *pRI) {
+    RIL_Depersonalization_v4 d;
+    int32_t t;
+    status_t status;
+
+    memset (&d, 0, sizeof(d));
+
+    // note we only check status at the end
+
+    status = p.readInt32(&t);
+    d.depersonalizationType = (RIL_PersoSubstate)t;
+
+    d.depersonalizationCode = strdupReadString(p);
+
+    startRequest;
+    appendPrintBuf("%stype=%d,pin=****",
+        printBuf, d.depersonalizationType);
+    closeRequest;
+    printRequest(pRI->token, pRI->pCI->requestNumber);
+
+    if (status != NO_ERROR) {
+        goto invalid;
+    }
+
+    s_callbacks.onRequest(pRI->pCI->requestNumber, &d, sizeof(d), pRI);
+
+#ifdef MEMSET_FREED
+    memsetString(d.depersonalizationCode);
+#endif
+
+    free(d.depersonalizationCode);
+
+#ifdef MEMSET_FREED
+    memset(&d, 0, sizeof(d));
+#endif
+
+    return;
+invalid:
+    free(d.depersonalizationCode);
+    invalidCommandBlock(pRI);
+    return;
 }
 
 static void
@@ -1784,16 +1826,16 @@ static int responseDataCallListV4(Parcel &p, void *response, size_t responselen)
         return RIL_ERRNO_INVALID_RESPONSE;
     }
 
-    if (responselen % sizeof(RIL_Data_Call_Response_v4) != 0) {
+    if (responselen % sizeof(RIL_Data_Call_Response_v4_) != 0) {
         RLOGE("invalid response length %d expected multiple of %d",
-                (int)responselen, (int)sizeof(RIL_Data_Call_Response_v4));
+                (int)responselen, (int)sizeof(RIL_Data_Call_Response_v4_));
         return RIL_ERRNO_INVALID_RESPONSE;
     }
 
-    int num = responselen / sizeof(RIL_Data_Call_Response_v4);
+    int num = responselen / sizeof(RIL_Data_Call_Response_v4_);
     p.writeInt32(num);
 
-    RIL_Data_Call_Response_v4 *p_cur = (RIL_Data_Call_Response_v4 *) response;
+    RIL_Data_Call_Response_v4_ *p_cur = (RIL_Data_Call_Response_v4_ *) response;
     startResponse;
     int i;
     for (i = 0; i < num; i++) {
@@ -1865,15 +1907,6 @@ static int responseDataCallList(Parcel &p, void *response, size_t responselen)
     }
 
     return 0;
-}
-
-static int responseSetupDataCall(Parcel &p, void *response, size_t responselen)
-{
-    if (s_callbacks.version < 5) {
-        return responseStringsWithVersion(s_callbacks.version, p, response, responselen);
-    } else {
-        return responseDataCallList(p, response, responselen);
-    }
 }
 
 static int responseRaw(Parcel &p, void *response, size_t responselen) {
@@ -2577,30 +2610,30 @@ static int responseSimStatus(Parcel &p, void *response, size_t responselen) {
         return RIL_ERRNO_INVALID_RESPONSE;
     }
 
-    if (responselen == sizeof (RIL_CardStatus_v6)) {
-        RIL_CardStatus_v6 *p_cur = ((RIL_CardStatus_v6 *) response);
-
-        p.writeInt32(p_cur->card_state);
-        p.writeInt32(p_cur->universal_pin_state);
-        p.writeInt32(p_cur->gsm_umts_subscription_app_index);
-        p.writeInt32(p_cur->cdma_subscription_app_index);
-        p.writeInt32(p_cur->ims_subscription_app_index);
-
-        sendSimStatusAppInfo(p, p_cur->num_applications, p_cur->applications);
-    } else if (responselen == sizeof (RIL_CardStatus_v5)) {
-        RIL_CardStatus_v5 *p_cur = ((RIL_CardStatus_v5 *) response);
-
-        p.writeInt32(p_cur->card_state);
-        p.writeInt32(p_cur->universal_pin_state);
-        p.writeInt32(p_cur->gsm_umts_subscription_app_index);
-        p.writeInt32(p_cur->cdma_subscription_app_index);
-        p.writeInt32(-1);
-
-        sendSimStatusAppInfo(p, p_cur->num_applications, p_cur->applications);
-    } else {
-        RLOGE("responseSimStatus: A RilCardStatus_v6 or _v5 expected\n");
+    if (responselen != sizeof (RIL_CardStatus_v4)) {
+        RLOGE("responseSimStatus: A RilCardStatus_v4 expected\n");
         return RIL_ERRNO_INVALID_RESPONSE;
     }
+
+    RIL_CardStatus_v4 *p_cur = (RIL_CardStatus_v4 *)response;
+
+    p.writeInt32(p_cur->card_state);
+
+    p.writeInt32(p_cur->universal_pin_state);
+
+    if (p_cur->num_current_3gpp_indexes <= 0)
+        p.writeInt32(-1);
+    else
+        p.writeInt32(p_cur->subscription_3gpp_app_index[0]);
+
+    if (p_cur->num_current_3gpp2_indexes <= 0)
+        p.writeInt32(-1);
+    else
+        p.writeInt32(p_cur->subscription_3gpp2_app_index[0]);
+
+    p.writeInt32(-1);
+
+    sendSimStatusAppInfo(p, p_cur->num_applications, p_cur->applications);
 
     return 0;
 }
@@ -2852,7 +2885,7 @@ static void listenCallback (int fd, short flags, void *param) {
         RLOGE("Error on accept() errno:%d", errno);
         /* start listening for new connections again */
         rilEventAddWakeup(&s_listen_event);
-	      return;
+        return;
     }
 
     /* check the credential of the other side and only accept socket from

@@ -17,7 +17,8 @@ LOCAL_SHARED_LIBRARIES := \
     libhardware_legacy \
     librilutils
 
-LOCAL_CFLAGS :=
+# Auto-define this for Gingerbread Qualcomm RIL (v4)
+LOCAL_CFLAGS := -DLEGACY_RIL
 
 LOCAL_MODULE:= libril
 
