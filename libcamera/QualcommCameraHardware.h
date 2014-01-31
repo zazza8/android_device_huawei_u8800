@@ -20,7 +20,6 @@
 
 #include <utils/threads.h>
 #include <binder/MemoryBase.h>
-#include <binder/MemoryHeapBase.h>
 #include <stdint.h>
 #include <hardware/camera.h>
 #include <camera/Camera.h>
@@ -117,8 +116,6 @@ public:
     virtual CameraParameters getParameters() const;
     virtual status_t sendCommand(int32_t command, int32_t arg1, int32_t arg2);
     virtual int32_t getNumberOfVideoBuffers();
-    virtual sp<IMemory> getVideoBuffer(int32_t index);
-    virtual status_t getBufferInfo( sp<IMemory>& Frame, size_t *alignedSize);
     virtual void encodeData( );
     virtual status_t set_PreviewWindow(void* param);
     virtual status_t setPreviewWindow(preview_stream_ops_t* window);
@@ -201,109 +198,6 @@ private:
         static sp<MMCameraDL> getInstance();
         void * pointer();
     };
-
-    // This class represents a heap which maintains several contiguous
-    // buffers.  The heap may be backed by pmem (when pmem_pool contains
-    // the name of a /dev/pmem* file), or by ashmem (when pmem_pool == NULL).
-    struct MemPool : public RefBase {
-        MemPool(int buffer_size, int num_buffers,
-                int frame_size,
-                const char *name);
-
-        virtual ~MemPool()  ;// = 0;
-
-        void completeInitialization();
-        bool initialized() const {
-            return mHeap != NULL && mHeap->base() != MAP_FAILED;
-        }
-
-        virtual status_t dump(int fd, const Vector<String16>& args) const;
-
-        int mBufferSize;
-        int mAlignedBufferSize;
-        int mNumBuffers;
-        int mFrameSize;
-        sp<MemoryHeapBase> mHeap;
-        sp<MemoryBase> *mBuffers;
-
-        const char *mName;
-    };
-      struct DispMemPool : public MemPool {
-          DispMemPool(int fd, int buffer_size,
-          int num_buffers, int frame_size,
-          const char *name);
-          virtual ~DispMemPool();
-          int mFD;
-      };
-      sp<DispMemPool> mPreviewHeap[kPreviewBufferCount + MIN_UNDEQUEUD_BUFFER_COUNT];
-
-    struct AshmemPool : public MemPool {
-        AshmemPool(int buffer_size, int num_buffers,
-                   int frame_size,
-                   const char *name);
-    };
-
-    struct PmemPool : public MemPool {
-        PmemPool(const char *pmem_pool,
-                 int flags, int pmem_type,
-                 int buffer_size, int num_buffers,
-                 int frame_size, int cbcr_offset,
-                 int yoffset, const char *name);
-        virtual ~PmemPool();
-        int mFd;
-        int mPmemType;
-        int mCbCrOffset;
-        int myOffset;
-        int mCameraControlFd;
-        uint32_t mAlignedSize;
-        struct pmem_region mSize;
-        sp<QualcommCameraHardware::MMCameraDL> mMMCameraDLRef;
-    };
-//TODO
-    struct IonPool : public MemPool {
-        IonPool( int ion_heap_id, int flags, int ion_type,
-             int buffer_size, int num_buffers,
-             int frame_size, int cbcr_offset,
-             int yoffset, const char *name);
-    virtual ~IonPool();
-    int mFd;
-    int mIonType;
-    int mCbCrOffset;
-    int myOffset;
-    int mCameraControlFd;
-    uint32_t mAlignedSize;
-    sp<QualcommCameraHardware::MMCameraDL> mMMCameraDLRef;
-    static const char mIonDevName[];
-    };
-#ifdef USE_ION
-//    sp<IonPool> mPreviewHeap;
-    sp<IonPool> mYV12Heap;
-    sp<IonPool> mRecordHeap;
-    sp<IonPool> mThumbnailHeap;
-    sp<IonPool> mRawHeap;
-    sp<IonPool> mDisplayHeap;
-    sp<AshmemPool> mJpegHeap;
-    sp<AshmemPool> mStatHeap;
-    sp<AshmemPool> mMetaDataHeap;
-    sp<IonPool> mRawSnapShotPmemHeap;
-    sp<IonPool> mLastPreviewFrameHeap;
-    sp<IonPool> mPostviewHeap;
-#else
-//    sp<PmemPool> mPreviewHeap;
-    sp<PmemPool> mYV12Heap;
-    sp<PmemPool> mRecordHeap;
-    sp<PmemPool> mThumbnailHeap;
-    sp<PmemPool> mRawHeap;
-    sp<PmemPool> mDisplayHeap;
-    sp<AshmemPool> mJpegHeap;
-    sp<AshmemPool> mStatHeap;
-    sp<AshmemPool> mMetaDataHeap;
-    sp<PmemPool> mRawSnapShotPmemHeap;
-    sp<PmemPool> mLastPreviewFrameHeap;
-    sp<PmemPool> mPostviewHeap;
-	sp<PmemPool> mPostViewHeap;
-    sp<PmemPool> mInitialPreviewHeap;
-#endif
 
     sp<MMCameraDL> mMMCameraDLRef;
 
@@ -477,7 +371,6 @@ private:
     status_t setZslParam(const CameraParameters& params);
     status_t setSnapshotCount(const CameraParameters& params);
     void setGpsParameters();
-    bool storePreviewFrameForPostview();
     bool isValidDimension(int w, int h);
     status_t updateFocusDistances(const char *focusmode);
     int mStoreMetaDataInFrame;
@@ -614,7 +507,6 @@ private:
     bool mInHFRThread;
     Mutex mPmemWaitLock;
     Condition mPmemWait;
-    bool mPrevHeapDeallocRunning;
     bool mHdrMode;
     bool mExpBracketMode;
 

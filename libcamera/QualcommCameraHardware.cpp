@@ -22,10 +22,6 @@
 
 #include <utils/Errors.h>
 #include <utils/threads.h>
-#if 0
-#include <binder/MemoryHeapPmem.h>
-#include <binder/MemoryHeapIon.h>
-#endif
 #include <camera/Camera.h>
 #include <hardware/camera.h>
 #include <utils/String16.h>
@@ -1382,7 +1378,6 @@ QualcommCameraHardware::QualcommCameraHardware()
       mActualPictHeight(0),
       mPreviewStopping(false),
       mInHFRThread(false),
-      mPrevHeapDeallocRunning(false),
       mHdrMode(false),
       mExpBracketMode(false),
       mRecordingState(0)
@@ -2061,10 +2056,6 @@ void QualcommCameraHardware::initDefaultParameters()
     /* Initialize the camframe_timeout_flag*/
     Mutex::Autolock l(&mCamframeTimeoutLock);
     camframe_timeout_flag = FALSE;
-    mPostviewHeap = NULL;
-    mDisplayHeap = NULL;
-    mLastPreviewFrameHeap = NULL;
-    mThumbnailHeap = NULL;
 
     mInitialized = true;
     strTexturesOn = false;
@@ -2236,40 +2227,6 @@ bool QualcommCameraHardware::startCamera()
 status_t QualcommCameraHardware::dump(int fd,
                                       const Vector<String16>& args) const
 {
-    const size_t SIZE = 256;
-    char buffer[SIZE];
-    String8 result;
-#if 0
-    // Dump internal primitives.
-    result.append("QualcommCameraHardware::dump");
-    snprintf(buffer, 255, "mMsgEnabled (%d)\n", mMsgEnabled);
-    result.append(buffer);
-    int width, height;
-    mParameters.getPreviewSize(&width, &height);
-    snprintf(buffer, 255, "preview width(%d) x height (%d)\n", width, height);
-    result.append(buffer);
-    mParameters.getPictureSize(&width, &height);
-    snprintf(buffer, 255, "raw width(%d) x height (%d)\n", width, height);
-    result.append(buffer);
-    snprintf(buffer, 255,
-             "preview frame size(%d), raw size (%d), jpeg size (%d) "
-             "and jpeg max size (%d)\n", mPreviewFrameSize, mRawSize,
-             mJpegSize, mJpegMaxSize);
-    result.append(buffer);
-    write(fd, result.string(), result.size());
-
-    // Dump internal objects.
-    if (mPreviewHeap[0] != 0) {
-        mPreviewHeap[0]->dump(fd, args);
-    }
-    if (mRawHeap != 0) {
-        mRawHeap->dump(fd, args);
-    }
-    if (mJpegHeap != 0) {
-        mJpegHeap->dump(fd, args);
-    }
-    mParameters.dump(fd, args);
-#endif
     return NO_ERROR;
 }
 
@@ -2741,25 +2698,6 @@ void QualcommCameraHardware::runFrameThread(void *data)
     LINK_camframe_release_all_frames(CAM_PREVIEW_FRAME);
 
     if(mIs3DModeOn != true) {
-#if 0
-        if(mInHFRThread == false)
-        {
-             mPmemWaitLock.lock();
-             //mPreviewHeap.clear();
-// TODO do properly
-             mPrevHeapDeallocRunning = true;
-             mPmemWait.signal();
-             mPmemWaitLock.unlock();
-
-            if(( mPreviewFormat == CAMERA_YUV_420_YV12 )&&
-                ( mCurrentTarget == TARGET_MSM7627A || mCurrentTarget == TARGET_MSM7627) &&
-                previewWidth%32 != 0 )
-                mYV12Heap.clear();
-
-        }
-        else
-#endif
-        {
            int mBufferSize = previewWidth * previewHeight * 3/2;
            int mCbCrOffset = PAD_TO_WORD(previewWidth * previewHeight);
            ALOGE("unregistering all preview buffers");
@@ -2775,18 +2713,11 @@ void QualcommCameraHardware::runFrameThread(void *data)
                          MSM_PMEM_PREVIEW,
                          false,
                          false );
-            //mPreviewHeap[cnt].clear();
-             // TODO : clean properly
             }
-        }
     }
     if(!mZslEnable) {
     if(( mCurrentTarget == TARGET_MSM7630 ) || (mCurrentTarget == TARGET_QSD8250) || (mCurrentTarget == TARGET_MSM8660)){
         if(mHFRMode != true) {
-#if 0
-            mRecordHeap.clear();
-            mRecordHeap = NULL;
-#endif
         } else {
             ALOGI("%s: unregister record buffers with camera driver", __FUNCTION__);
             register_record_buffers(false);
@@ -2878,8 +2809,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
 
         // Find the offset within the heap of the current buffer.
         ssize_t offset_addr = 0; // TODO , use proper value
-      //      (ssize_t)frame->buffer - (ssize_t)mPreviewHeap->mHeap->base();
-     //   ssize_t offset = offset_addr / mPreviewHeap->mAlignedBufferSize;
         common_crop_t *crop = (common_crop_t *) (frame->cropinfo);
 #ifdef DUMP_PREVIEW_FRAMES
         static int frameCnt = 0;
@@ -2948,25 +2877,9 @@ void QualcommCameraHardware::runPreviewThread(void *data)
                  mResetWindowCrop = false;
              }
          }
-         /* To overcome a timing case where we could be having the overlay refer to deallocated
-            mDisplayHeap(and showing corruption), the mDisplayHeap is not deallocated untill the
-            first preview frame is queued to the overlay in 8660. Also adding the condition
-            to check if snapshot is currently in progress ensures that the resources being
-            used by the snapshot thread are not incorrectly deallocated by preview thread*/
-         if ((mCurrentTarget == TARGET_MSM8660)&&(mFirstFrame == true)) {
-             ALOGD(" receivePreviewFrame : first frame queued, display heap being deallocated");
-              mThumbnailHeap.clear();
-              mDisplayHeap.clear();
-              if(!mZslEnable){
-                 mDisplayHeap.clear();
-                 mPostviewHeap.clear();
-             }
-             mFirstFrame = false;
-         }
          mLastQueuedFrame = (void *)frame->buffer;
          bufferIndex = mapBuffer(frame);
          if(bufferIndex >= 0) {
-           //Need to encapsulate this in IMemory object and send
 
          if (pcb != NULL && (msgEnabled & CAMERA_MSG_PREVIEW_FRAME)) {
              int previewBufSize;
@@ -3083,19 +2996,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
                         array[i+2] = -1;
                         array[i+3] = -1;
                     }
-                }
-                if(mMetaDataHeap != NULL){
-                                    ALOGV("runPreviewThread mMetaDataHEap is non-NULL");
-                    memcpy((uint32_t *)mMetaDataHeap->mHeap->base(), (uint32_t *)array, (sizeof(int)*(MAX_ROI*4+1)));
-                    mMetaDataWaitLock.unlock();
-#if 0
-                    if  (mcb != NULL && (msgEnabled & CAMERA_MSG_META_DATA)) {
-                        mcb(CAMERA_MSG_META_DATA, mMetaDataHeap->mBuffers[0], mdata);
-                    }
-#endif
-                } else {
-                    mMetaDataWaitLock.unlock();
-                    ALOGE("runPreviewThread mMetaDataHeap is NULL");
                 }
             } else {
                 mMetaDataWaitLock.unlock();
@@ -3330,19 +3230,6 @@ void QualcommCameraHardware::runVideoThread(void *data)
         }*/
 
         if(vframe != NULL) {
-            // Find the offset within the heap of the current buffer.
-            //ALOGV("Got video frame :  buffer %d base %d ", vframe->buffer,
-              //(unsigned long int)mRecordHeap->mHeap->base());
-            //ssize_t offset =
-            //    (ssize_t)vframe->buffer - (ssize_t)mRecordHeap->mHeap->base();
-            //ALOGV("offset = %d , alignsize = %d , new_offset = %d", (int)offset, mRecordHeap->mAlignedBufferSize,
-             // (int)(offset / mRecordHeap->mAlignedBufferSize));
-
-            //offset /= mRecordHeap->mAlignedBufferSize;
-
-            //set the track flag to true for this video buffer
-            //record_buffers_tracking_flag[offset] = true;
-
             /* Extract the timestamp of this frame */
             nsecs_t timeStamp = nsecs_t(vframe->ts.tv_sec)*1000000000LL + vframe->ts.tv_nsec;
 
@@ -3365,28 +3252,6 @@ void QualcommCameraHardware::runVideoThread(void *data)
                 close(file_fd);
           }
           frameCnt++;
-#endif
-#if 0
-          if(mIs3DModeOn ) {
-              /* VPE will be taking care of zoom, so no need to
-               * use overlay's setCrop interface for zoom
-               * functionality.
-               */
-              /* get the offset of current video buffer for rendering */
-              ssize_t offset_addr = (ssize_t)vframe->buffer -
-                                      (ssize_t)mRecordHeap->mHeap->base();
-              /* To overcome a timing case where we could be having the overlay refer to deallocated
-                 mDisplayHeap(and showing corruption), the mDisplayHeap is not deallocated untill the
-                 first preview frame is queued to the overlay in 8660 */
-              if ((mCurrentTarget == TARGET_MSM8660)&&(mFirstFrame == true)) {
-                  ALOGD(" receivePreviewFrame : first frame queued, display heap being deallocated");
-                  mThumbnailHeap.clear();
-                  mDisplayHeap.clear();
-                  mFirstFrame = false;
-                  mPostviewHeap.clear();
-              }
-              mLastQueuedFrame = (void *)vframe->buffer;
-          }
 #endif
             // Enable IF block to give frames to encoder , ELSE block for just simulation
 #if 1
@@ -3415,39 +3280,6 @@ void QualcommCameraHardware::runVideoThread(void *data)
                     }
                 }
             }
-#if 0
-            else {
-                mCallbackLock.lock();
-                msgEnabled = mMsgEnabled;
-                data_callback pcb = mDataCallback;
-                void *pdata = mCallbackCookie;
-                mCallbackLock.unlock();
-                if (pcb != NULL) {
-                    ALOGE("pcb is not null");
-                    static int count = 0;
-                    //if(msgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
-                    if (!count) {
-                        ALOGE("Giving first frame to app");
-                        pcb(CAMERA_MSG_PREVIEW_FRAME, mRecordHeap->mBuffers[offset],
-                                pdata);
-                        count++;
-                    }
-                }
-                if(mRecordingState == 1) {
-                    if(rcb != NULL && (msgEnabled & CAMERA_MSG_VIDEO_FRAME) ) {
-                        ALOGV("in video_thread 3D mode : got video frame, giving frame to services/encoder");
-                        rcb(timeStamp, CAMERA_MSG_VIDEO_FRAME, mRecordHeap->mBuffers[offset], rdata);
-                    }
-                } else {
-                    /* When in preview mode, put the video buffer back into
-                     * free Q, for next availability.
-                     */
-                    ALOGV("in video_thread 3D mode : got video frame, putting frame to Free Q");
-                    record_buffers_tracking_flag[offset] = false;
-                    LINK_camframe_add_frame(CAM_VIDEO_FRAME,vframe);
-                }
-            }
-#endif
 #else
             // 720p output2  : simulate release frame here:
             ALOGE("in video_thread simulation , releasing the video frame");
@@ -3707,96 +3539,6 @@ ALOGE("%s Got preview dimension as %d x %d ", __func__, previewWidth, previewHei
     // keep it for jpeg_encoder_encode.
     bool ret = native_set_parms(CAMERA_PARM_DIMENSION,
                                sizeof(cam_ctrl_dimension_t), &mDimension);
-#if 0
-    if(mIs3DModeOn != true) {
-      if(mInHFRThread == false)
-      {
-        mPrevHeapDeallocRunning = false;
-#ifdef USE_ION
-        mPreviewHeap = new IonPool(ion_heap,
-                                MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_PREVIEW, //MSM_PMEM_OUTPUT2,
-                                mPreviewFrameSize,
-                                kPreviewBufferCountActual,
-                                mPreviewFrameSize,
-                                CbCrOffset,
-                                0,
-                                "preview");
-#else
-        mPreviewHeap = new PmemPool(pmem_region,
-                                MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_PREVIEW, //MSM_PMEM_OUTPUT2,
-                                mPreviewFrameSize,
-                                kPreviewBufferCountActual,
-                                mPreviewFrameSize,
-                                CbCrOffset,
-                                0,
-                                "preview");
-#endif
-        if (!mPreviewHeap->initialized()) {
-          mPreviewHeap.clear();
-          ALOGE("initPreview X: could not initialize Camera preview heap.");
-          return false;
-        }
-      }
-      else
-      {
-          for (int cnt = 0; cnt < kPreviewBufferCountActual; ++cnt) {
-              bool status;
-              int active = (cnt < ACTIVE_PREVIEW_BUFFERS);
-              status = register_buf(mPreviewFrameSize,
-                       mPreviewFrameSize,
-                       CbCrOffset,
-                       0,
-                       mPreviewHeap->mHeap->getHeapID(),
-                       mPreviewHeap->mAlignedBufferSize * cnt,
-                       (uint8_t *)mPreviewHeap->mHeap->base() + mPreviewHeap->mAlignedBufferSize * cnt,
-                       MSM_PMEM_PREVIEW,
-                       active,
-                       true);
-              if(status == false){
-                  ALOGE("Registring Preview Buffers failed for HFR mode");
-                  return false;
-              }
-          }
-      }
-      // if 7x27A , YV12 format is set as preview format , if width is not 32
-      // bit aligned , we need seperate buffer to hold YV12 data
-    yv12framesize = (previewWidth*previewHeight)
-          + 2* ( CEILING16(previewWidth/2) * (previewHeight/2)) ;
-    if(( mPreviewFormat == CAMERA_YUV_420_YV12 ) &&
-        ( mCurrentTarget == TARGET_MSM7627A || mCurrentTarget == TARGET_MSM7627 ) &&
-        previewWidth%32 != 0 ){
-        ALOGE("initpreview : creating YV12 heap as previewwidth %d not 32 aligned", previewWidth);
-#ifdef USE_ION
-        mYV12Heap = new IonPool(ion_heap,
-                                MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_PREVIEW,
-                                yv12framesize,
-                                NUM_YV12_FRAMES,
-                                yv12framesize,
-                                CbCrOffset,
-                                0,
-                                "postview");
-#else
-        mYV12Heap = new PmemPool(pmem_region,
-                                MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_PREVIEW,
-                                yv12framesize,
-                                NUM_YV12_FRAMES,
-                                yv12framesize,
-                                CbCrOffset,
-                                0,
-                                "postview");
-#endif
-            if (!mYV12Heap->initialized()) {
-                mYV12Heap.clear();
-                ALOGE("initPreview X: could not initialize YV12 Camera preview heap.");
-                return false;
-            }
-        }
-    }
-#endif
 
     if( ( mCurrentTarget == TARGET_MSM7630 ) || (mCurrentTarget == TARGET_QSD8250) || (mCurrentTarget == TARGET_MSM8660)) {
 
@@ -3810,16 +3552,6 @@ ALOGE("%s Got preview dimension as %d x %d ", __func__, previewWidth, previewHei
 
     if (ret) {
         if(mIs3DModeOn != true) {
-            for (cnt = 0; cnt < kPreviewBufferCount; cnt++) {
-#if 0
-                frames[cnt].fd = mPreviewHeap->mHeap->getHeapID();
-                frames[cnt].buffer =
-                    (uint32_t)mPreviewHeap->mHeap->base() + mPreviewHeap->mAlignedBufferSize * cnt;
-                frames[cnt].y_off = 0;
-                frames[cnt].cbcr_off = CbCrOffset;
-                frames[cnt].path = OUTPUT_TYPE_P; // MSM_FRAME_ENC;
-#endif
-            }
 
             mPreviewBusyQueue.init();
             LINK_camframe_release_all_frames(CAM_PREVIEW_FRAME);
@@ -3991,90 +3723,6 @@ bool QualcommCameraHardware::initZslBuffers(bool initJpegHeap){
        pmem_region = "/dev/pmem_adsp";
     }
     //Main Raw Image
-    #if 0
-#ifdef USE_ION
-    mRawHeap =
-        new IonPool( ion_heap,
-                     MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                     MSM_PMEM_MAINIMG,
-                     mJpegMaxSize,
-                     MAX_SNAPSHOT_BUFFERS,
-                     mRawSize,
-                     mCbCrOffsetRaw,
-                     yOffset,
-                     "snapshot camera");
-#else
-    mRawHeap =
-        new PmemPool(pmem_region,
-                     MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                     MSM_PMEM_MAINIMG,
-                     mJpegMaxSize,
-                     MAX_SNAPSHOT_BUFFERS,
-                     mRawSize,
-                     mCbCrOffsetRaw,
-                     yOffset,
-                     "snapshot camera");
-#endif
-    if (!mRawHeap->initialized()) {
-       ALOGE("initZslBuffer X failed ");
-       mRawHeap.clear();
-       ALOGE("initRaw X: error initializing mRawHeap");
-       return false;
-    }
-
-
-    // Jpeg
-    if (initJpegHeap) {
-        ALOGV("initZslRaw: initializing mJpegHeap.");
-        mJpegHeap =
-            new AshmemPool(mJpegMaxSize,
-                           (MAX_SNAPSHOT_BUFFERS - 2),  // It is the max number of snapshot supported.
-                           0, // we do not know how big the picture will be
-                           "jpeg");
-
-        if (!mJpegHeap->initialized()) {
-            mJpegHeap.clear();
-            mRawHeap.clear();
-            ALOGE("initZslRaw X failed: error initializing mJpegHeap.");
-            return false;
-        }
-    }
-
-    //PostView
-    pmem_region = "/dev/pmem_adsp";
-    ion_heap = ION_HEAP_ADSP_ID;
-#ifdef USE_ION
-    mPostviewHeap =
-            new IonPool(ion_heap,
-                        MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                        MSM_PMEM_THUMBNAIL,
-                        postViewBufferSize,
-                        MAX_SNAPSHOT_BUFFERS,
-                        postViewBufferSize,
-                        CbCrOffsetPostview,
-                        0,
-                        "thumbnail");
-#else
-    mPostviewHeap =
-            new PmemPool(pmem_region,
-                         MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                         MSM_PMEM_THUMBNAIL,
-                         postViewBufferSize,
-                         MAX_SNAPSHOT_BUFFERS,
-                         postViewBufferSize,
-                         CbCrOffsetPostview,
-                         0,
-                         "thumbnail");
-#endif
-
-    if (!mPostviewHeap->initialized()) {
-        mPostviewHeap.clear();
-        mJpegHeap.clear();
-        mRawHeap.clear();
-        ALOGE("initZslBuffer X failed: error initializing mPostviewHeap.");
-        return false;
-    }
-#endif
     if( createSnapshotMemory(MAX_SNAPSHOT_BUFFERS, MAX_SNAPSHOT_BUFFERS, initJpegHeap) == false ) // TODO : check if the numbers are correct
     {
         ALOGE("ERROR :  initZslraw , createSnapshotMemory failed");
@@ -4365,12 +4013,7 @@ bool QualcommCameraHardware::initRaw(bool initJpegHeap)
         ALOGE("initRaw X: failed to set dimension");
         return false;
     }
-#if 0
-    if (mJpegHeap != NULL) {
-        ALOGV("initRaw: clearing old mJpegHeap.");
-        mJpegHeap.clear();
-    }
-#endif
+
     //postview buffer initialization
     postViewBufferSize  = mPostviewWidth * w_scale_factor * mPostviewHeight * 3 / 2;
     int CbCrOffsetPostview = PAD_TO_WORD(mPostviewWidth * w_scale_factor * mPostviewHeight);
@@ -4745,7 +4388,7 @@ status_t QualcommCameraHardware::getBuffersAndStartPreview() {
                        mPreviewMapped[cnt]->size);
                   ALOGE(" getbuffersandrestartpreview deQ %d", handle->fd);
                   frames[cnt].fd = handle->fd;
-                  frames[cnt].buffer = (unsigned int)mPreviewMapped[cnt]->data;//(unsigned int)mPreviewHeap[cnt]->mHeap->base();
+                  frames[cnt].buffer = (unsigned int)mPreviewMapped[cnt]->data;
                   if(((void *)frames[cnt].buffer == MAP_FAILED)
                      || (frames[cnt].buffer == 0)) {
                       ALOGE("%s: Couldnt map preview buffers", __FUNCTION__);
@@ -4870,17 +4513,6 @@ void QualcommCameraHardware::release()
 
     deinitRawSnapshot();
     ALOGI("release: clearing resources done.");
-    if(mCurrentTarget == TARGET_MSM8660) {
-       ALOGV("release : Clearing the mThumbnailHeap and mDisplayHeap");
-       mLastPreviewFrameHeap.clear();
-       mLastPreviewFrameHeap = NULL;
-       mThumbnailHeap.clear();
-       mThumbnailHeap = NULL;
-       mPostviewHeap.clear();
-       mPostviewHeap = NULL;
-       mDisplayHeap.clear();
-       mDisplayHeap = NULL;
-    }
     LINK_mm_camera_deinit();
     if(fb_fd >= 0) {
         close(fb_fd);
@@ -4922,106 +4554,7 @@ QualcommCameraHardware::~QualcommCameraHardware()
     //singleton_lock.unlock();
     ALOGI("~QualcommCameraHardware X");
 }
-#if 0
-IMemoryHeap* QualcommCameraHardware::getRawHeap() const
-{
-#if 0
-    ALOGV("getRawHeap");
-    return mDisplayHeap != NULL ? mDisplayHeap->mHeap : NULL;
-#endif
-}
 
-IMemoryHeap* QualcommCameraHardware::getPreviewHeap() const
-{
-#if 0
-    ALOGV("getPreviewHeap");
-    return mPreviewHeap[0] != NULL ? mPreviewHeap[0]->mHeap : NULL;
-    if(mIs3DModeOn != true) {
-        if(( mPreviewFormat == CAMERA_YUV_420_YV12 ) &&
-            ( mCurrentTarget == TARGET_MSM7627A || mCurrentTarget == TARGET_MSM7627 ) &&
-            previewWidth%32 != 0 )
-            return mYV12Heap->mHeap;
-
-        return mPreviewHeap != NULL ? mPreviewHeap->mHeap : NULL;
-    } else
-        return mRecordHeap != NULL ? mRecordHeap->mHeap : NULL;
-
-#endif
-}
-#endif
-#if 0
-status_t QualcommCameraHardware::startInitialPreview() {
-   ALOGV(" %s : E", __FUNCTION__);
-   const char * pmem_region = "/dev/pmem_smipool";
-   int initialPreviewWidth = INITIAL_PREVIEW_WIDTH;
-   int initialPreviewHeight = INITIAL_PREVIEW_HEIGHT;
-   int previewFrameSize = initialPreviewWidth * initialPreviewHeight * 3/2;
-   int CbCrOffset = PAD_TO_WORD(initialPreviewWidth * initialPreviewHeight);
-   mFrameThreadWaitLock.lock();
-    while (mFrameThreadRunning) {
-        ALOGV("%s: waiting for old frame thread to complete.", __FUNCTION__);
-        mFrameThreadWait.wait(mFrameThreadWaitLock);
-        ALOGV("%s: old frame thread completed.",__FUNCTION__);
-    }
-    mFrameThreadWaitLock.unlock();
-
-    mInitialPreviewHeap = new PmemPool(pmem_region,
-                               MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_PREVIEW,
-                                previewFrameSize,
-                                kPreviewBufferCount,
-                                previewFrameSize,
-                                CbCrOffset,
-                                0,
-                                "initial preview");
-
-    mDimension.display_width  = initialPreviewWidth;
-    mDimension.display_height = initialPreviewHeight;
-    mDimension.video_width  = initialPreviewWidth;
-    mDimension.video_height = initialPreviewHeight;
-    mDimension.display_luma_width = initialPreviewWidth;
-    mDimension.display_luma_height = initialPreviewHeight;
-    mDimension.display_chroma_width = initialPreviewWidth;
-    mDimension.display_chroma_height = initialPreviewHeight;
-    mDimension.orig_video_width = initialPreviewWidth;
-    mDimension.orig_video_height = initialPreviewHeight;
-    ALOGV("mDimension.prev_format = %d", mDimension.prev_format);
-    ALOGV("mDimension.display_luma_width = %d", mDimension.display_luma_width);
-    ALOGV("mDimension.display_luma_height = %d", mDimension.display_luma_height);
-    ALOGV("mDimension.display_chroma_width = %d", mDimension.display_chroma_width);
-    ALOGV("mDimension.display_chroma_height = %d", mDimension.display_chroma_height);
-
-    native_set_parms(CAMERA_PARM_DIMENSION,
-              sizeof(cam_ctrl_dimension_t), &mDimension);
-    ALOGV(" %s : mDimension.video_width = %d mDimension.video_height = %d", __FUNCTION__,
-             mDimension.video_width, mDimension.video_height);
-    mRecordFrameSize = previewFrameSize;
-    ALOGV("mRecordFrameSize = %d", mRecordFrameSize);
-
-    mRecordHeap = new PmemPool(pmem_region,
-                               MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                               MSM_PMEM_VIDEO,
-                               previewFrameSize,
-                               kRecordBufferCount,
-                               previewFrameSize,
-                               CbCrOffset,
-                               0,
-                               "initial record");
-
-    if (!mRecordHeap->initialized()) {
-        mRecordHeap.clear();
-        ALOGE("%s X: could not initialize record heap.", __FUNCTION__);
-        return false;
-    }
-    {
-        Mutex::Autolock cameraRunningLock(&mCameraRunningLock);
-        mCameraRunning = native_start_ops(CAMERA_OPS_STREAMING_VIDEO, NULL);
-    }
-
-    ALOGV(" %s : X", __FUNCTION__);
-    return NO_ERROR;
-}
-#endif
 status_t QualcommCameraHardware::startPreviewInternal()
 {
    ALOGV("in startPreviewInternal : E");
@@ -5030,16 +4563,6 @@ status_t QualcommCameraHardware::startPreviewInternal()
      return NO_ERROR;
    }
    mPreviewStopping = false;
-#if 0
-   if(mZslEnable && !mZslPanorama){
-       ALOGE("start zsl Preview called");
-       mCamOps.mm_camera_start(CAMERA_OPS_ZSL_STREAMING_CB,NULL, NULL);
-       if (mCurrentTarget == TARGET_MSM8660) {
-           if(mLastPreviewFrameHeap != NULL)
-           mLastPreviewFrameHeap.clear();
-    }
-    }
-#endif
     if(mCameraRunning) {
         ALOGV("startPreview X: preview already running.");
         return NO_ERROR;
@@ -5169,24 +4692,6 @@ status_t QualcommCameraHardware::startPreview()
 
 void QualcommCameraHardware::stopInitialPreview() {
    mCameraRunning = 0;//!native_stop_ops(CAMERA_OPS_STREAMING_VIDEO, NULL);
-#if 0
-    ALOGV(" %s : E ", __FUNCTION__);
-    if (mCameraRunning) {
-        ALOGV(" %s : Camera was running. Stopping ", __FUNCTION__);
-        {
-            Mutex::Autolock l(&mCamframeTimeoutLock);
-           {
-      Mutex::Autolock cameraRunningLock(&mCameraRunningLock);
-      if(!camframe_timeout_flag) {
-                    mCameraRunning = !native_stop_ops(CAMERA_OPS_STREAMING_VIDEO, NULL);
-                }
-       }
-    }
-    mInitialPreviewHeap.clear();
-    mRecordHeap.clear();
-  }
-  ALOGV(" %s : X ", __FUNCTION__);
-#endif
 }
 
 void QualcommCameraHardware::stopPreviewInternal()
@@ -5729,14 +5234,7 @@ status_t QualcommCameraHardware::takePicture()
         int rotation = mParameters.getInt(CameraParameters::KEY_ROTATION);
         native_set_parms(CAMERA_PARM_JPEG_ROTATION, sizeof(int), &rotation);
     }
-#if 0    // TODO for ICS
-    if(mCurrentTarget == TARGET_MSM8660) {
-       /* Store the last frame queued for preview. This
-        * shall be used as postview */
-        if (!(storePreviewFrameForPostview()))
-        return UNKNOWN_ERROR;
-    }
-#endif
+
     if(!mZslEnable || mZslFlashEnable)
         stopPreviewInternal();
 #if 0
@@ -5843,7 +5341,7 @@ status_t QualcommCameraHardware::takeLiveSnapshotInternal()
       (uint8_t *)mJpegLiveSnapMapped->data, maxjpegsize)) {
         ALOGE("Link_set_liveshot_params failed.");
         if (NULL != mJpegLiveSnapMapped) {
-              ALOGV("initLiveSnapshot: clearing old mJpegHeap.");
+              ALOGV("initLiveSnapshot: clearing old mJpegLiveSnapMapped.");
               mJpegLiveSnapMapped->release(mJpegLiveSnapMapped);
               mJpegLiveSnapMapped = NULL;
         }
@@ -5854,7 +5352,7 @@ status_t QualcommCameraHardware::takeLiveSnapshotInternal()
             ALOGE("start_liveshot ioctl failed");
             liveshot_state = LIVESHOT_STOPPED;
             if (NULL != mJpegLiveSnapMapped) {
-              ALOGV("initLiveSnapshot: clearing old mJpegHeap.");
+              ALOGV("initLiveSnapshot: clearing old mJpegLiveSnapMapped.");
               mJpegLiveSnapMapped->release(mJpegLiveSnapMapped);
               mJpegLiveSnapMapped = NULL;
             }
@@ -5879,13 +5377,13 @@ bool QualcommCameraHardware::initLiveSnapshot(int videowidth, int videoheight)
     ALOGV("initLiveSnapshot E");
 
     if (NULL != mJpegLiveSnapMapped) {
-        ALOGV("initLiveSnapshot: clearing old mJpegHeap.");
+        ALOGV("initLiveSnapshot: clearing old mJpegLiveSnapMapped.");
         mJpegLiveSnapMapped->release(mJpegLiveSnapMapped);
         mJpegLiveSnapMapped = NULL;
     }
 
     mJpegMaxSize = videowidth * videoheight * 1.5;
-    ALOGV("initLiveSnapshot: initializing mJpegHeap.");
+    ALOGV("initLiveSnapshot: initializing mJpegLiveSnapMapped.");
     mJpegLiveSnapMapped = mGetMemory(-1, mJpegMaxSize,1,mCallbackCookie);
     if(mJpegLiveSnapMapped == NULL) {
         ALOGE("Failed to get camera memory for mJpegLibeSnapMapped" );
@@ -6016,12 +5514,6 @@ status_t QualcommCameraHardware::setHistogramOn()
         mStatsWaitLock.unlock();
         return NO_ERROR;
      }
-#if 0
-    if (mStatHeap != NULL) {
-        ALOGV("setHistogram on: clearing old mStatHeap.");
-        mStatHeap.clear();
-    }
-#endif
 
     mStatSize = sizeof(uint32_t) * HISTOGRAM_STATS_SIZE;
     mCurrent = -1;
@@ -6030,20 +5522,6 @@ status_t QualcommCameraHardware::setHistogramOn()
     individually expected to be page aligned  */
     int page_size_minus_1 = getpagesize() - 1;
     int32_t mAlignedStatSize = ((mStatSize + page_size_minus_1) & (~page_size_minus_1));
-#if 0
-    mStatHeap =
-            new AshmemPool(mAlignedStatSize,
-                           3,
-                           mStatSize,
-                           "stat");
-      if (!mStatHeap->initialized()) {
-          ALOGE("Stat Heap X failed ");
-          mStatHeap.clear();
-          ALOGE("setHistogramOn X: error initializing mStatHeap");
-          mStatsWaitLock.unlock();
-          return UNKNOWN_ERROR;
-      }
-#endif
     for(int cnt = 0; cnt<3; cnt++) {
             mStatsMapped[cnt]=mGetMemory(-1, mStatSize,1,mCallbackCookie);
             if(mStatsMapped[cnt] == NULL) {
@@ -6075,7 +5553,6 @@ status_t QualcommCameraHardware::setHistogramOff()
     mCfgControl.mm_camera_set_parm(CAMERA_PARM_HISTOGRAM, &mStatsOn);
 
     mStatsWaitLock.lock();
-//    mStatHeap.clear();
     for(int i=0; i<3; i++){
         if(mStatsMapped[i] != NULL){
             mStatsMapped[i]->release(mStatsMapped[i]);
@@ -6098,27 +5575,6 @@ status_t QualcommCameraHardware::runFaceDetection()
                 sizeof(facedetection) / sizeof(str_map), str);
 
         mMetaDataWaitLock.lock();
-        if (value == true) {
-            if(mMetaDataHeap != NULL)
-                mMetaDataHeap.clear();
-
-            mMetaDataHeap =
-                new AshmemPool((sizeof(int)*(MAX_ROI*4+1)),
-                        1,
-                        (sizeof(int)*(MAX_ROI*4+1)),
-                        "metadata");
-            if (!mMetaDataHeap->initialized()) {
-                ALOGE("Meta Data Heap allocation failed ");
-                mMetaDataHeap.clear();
-                ALOGE("runFaceDetection X: error initializing mMetaDataHeap");
-                mMetaDataWaitLock.unlock();
-                return UNKNOWN_ERROR;
-            }
-            mSendMetaData = true;
-        } else {
-            if(mMetaDataHeap != NULL)
-                mMetaDataHeap.clear();
-        }
         mMetaDataWaitLock.unlock();
         ret = native_set_parms(CAMERA_PARM_FD, sizeof(int8_t), (void *)&value);
         return ret ? NO_ERROR : UNKNOWN_ERROR;
@@ -6472,7 +5928,6 @@ void QualcommCameraHardware::receiveLiveSnapshot(uint32_t jpeg_size)
 
     //Reset the Gps Information & relieve memory
     exif_table_numEntries = 0;
-    mJpegHeap.clear();
 
     liveshot_state = LIVESHOT_DONE;
 
@@ -6520,9 +5975,6 @@ void QualcommCameraHardware::receiveCameraStats(camstats_type stype, camera_prev
      } else {
         mSendData = false;
         mCurrent = (mCurrent+1)%3;
-    // The first element of the array will contain the maximum hist value provided by driver.
-    //    *(uint32_t *)((unsigned int)mStatHeap->mHeap->base()+ (mStatHeap->mBufferSize * mCurrent)) = histinfo->max_value;
-    //    memcpy((uint32_t *)((unsigned int)mStatHeap->mHeap->base()+ (mStatHeap->mBufferSize * mCurrent)+ sizeof(int32_t)), (uint32_t *)histinfo->buffer,(sizeof(int32_t) * 256));
         *(uint32_t *)((unsigned int)(mStatsMapped[mCurrent]->data)) = histinfo->max_value;
         memcpy((uint32_t *)((unsigned int)mStatsMapped[mCurrent]->data + sizeof(int32_t)), (uint32_t *)histinfo->buffer,(sizeof(int32_t) * 256));
 
@@ -6621,57 +6073,8 @@ bool QualcommCameraHardware::initRecord()
         }
     }
     ALOGV("mRecordFrameSize = %d", mRecordFrameSize);
-    //if(mRecordHeap == NULL) {
-    #if 0
-#ifdef USE_ION
-        mRecordHeap = new IonPool(ion_heap,
-                                MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_VIDEO,
-                                recordBufferSize,
-                                kRecordBufferCount,
-                                mRecordFrameSize,
-                                CbCrOffset,
-                                0,
-                                "record");
-#endif
-
-        mRecordHeap = new PmemPool(pmem_region,
-                               MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-                                MSM_PMEM_VIDEO,
-                                recordBufferSize,
-                                kRecordBufferCount,
-                                mRecordFrameSize,
-                                CbCrOffset,
-                                0,
-                                "record");
-
-        if (!mRecordHeap->initialized()) {
-            mRecordHeap.clear();
-            mRecordHeap = NULL;
-            ALOGE("initRecord X: could not initialize record heap.");
-            return false;
-        }
-
-    } else {
-        if(mHFRMode == true) {
-            ALOGI("%s: register record buffers with camera driver", __FUNCTION__);
-            register_record_buffers(true);
-            mHFRMode = false;
-        }
-    }
-#endif
 
     for (int cnt = 0; cnt < kRecordBufferCount; cnt++) {
-#if 0
-       //recordframes[cnt].fd = mRecordHeap->mHeap->getHeapID();
-       recordframes[cnt].buffer = (unsigned long)mm_camera_do_mmap(mRecordFrameSize, &(recordframes[cnt].fd));
-           //(uint32_t)mRecordHeap->mHeap->base() + mRecordHeap->mAlignedBufferSize * cnt;
-       if(!recordframes[cnt].buffer)
-       {
-         ALOGE("Buffer allocation for record fram %d failed",cnt);
-         return false;
-       }
-#endif
 #ifdef USE_ION
     if (allocate_ion_memory(&record_main_ion_fd[cnt], &record_alloc[cnt], &record_ion_info_fd[cnt],
                             ion_heap, mRecordFrameSize, &mRecordfd[cnt]) < 0){
@@ -6979,7 +6382,7 @@ void QualcommCameraHardware::stopRecording()
         }
     }
     if (NULL != mJpegLiveSnapMapped) {
-        ALOGI("initLiveSnapshot: clearing old mJpegHeap.");
+        ALOGI("initLiveSnapshot: clearing old mJpegLiveSnapMapped.");
         mJpegLiveSnapMapped->release(mJpegLiveSnapMapped);
         mJpegLiveSnapMapped = NULL;
     }
@@ -7026,14 +6429,6 @@ void QualcommCameraHardware::stopRecording()
           }
         }
     }
-#if 0
-    else  // for other targets where output2 is not enabled
-        stopPreviewInternal();
-    if (mJpegHeap != NULL) {
-        ALOGV("stopRecording: clearing old mJpegHeap.");
-        mJpegHeap.clear();
-    }
-#endif
     mRecordingState = 0; // recording not started
     ALOGV("stopRecording: X");
 }
@@ -7049,7 +6444,6 @@ void QualcommCameraHardware::releaseRecordingFrame(const void *opaque)
     if( (mCurrentTarget == TARGET_MSM7630 )  || (mCurrentTarget == TARGET_QSD8250) || (mCurrentTarget == TARGET_MSM8660)) {
         ssize_t offset;
         size_t size;
-        //sp<IMemoryHeap> heap = mem->getMemory(&offset, &size);
         msm_frame* releaseframe = NULL;
         int cnt;
         for (cnt = 0; cnt < kRecordBufferCount; cnt++) {
@@ -7116,24 +6510,6 @@ void QualcommCameraHardware::notifyShutter(bool mPlayShutterSoundOnly)
     }
 
     if (mShutterPending && mNotifyCallback && (mMsgEnabled & CAMERA_MSG_SHUTTER)) {
-        //mDisplayHeap = mThumbnailHeap;
-#if 0
-        if (crop != NULL && (crop->in1_w != 0 && crop->in1_h != 0)) {
-            size.width = crop->in1_w;
-            size.height = crop->in1_h;
-        }
-        else {
-            size.width = mPostviewWidth;
-            size.height = mPostviewHeight;
-        }
-#endif
-/*
-        if(strTexturesOn == true) {
-            mDisplayHeap = mRawHeap;
-            size.width = mPictureWidth;
-            size.height = mPictureHeight;
-        }
-*/
         /* Now, invoke Notify Callback to unregister preview buffer
          * and register postview buffer with surface flinger. Set ext2
          * as 0 to indicate not to play shutter sound.
@@ -8773,35 +8149,7 @@ status_t QualcommCameraHardware::setFocusMode(const CameraParameters& params)
     return BAD_VALUE;
 
 }
-QualcommCameraHardware::DispMemPool::DispMemPool(int fd, int buffer_size,
-                                               int num_buffers, int frame_size,
-                                               const char *name) :
-    QualcommCameraHardware::MemPool(buffer_size,
-                                    num_buffers,
-                                    frame_size,
-                                    name),
-    mFD(fd)
-{
-#if 0
-    ALOGV("constructing MemPool %s from gralloc memory: "
-         "%d frames @ %d size "
-         "buffer size %d",
-         mName,
-         num_buffers, frame_size, buffer_size);
-    /* Use the fd given by gralloc and ask MemoryHeapBase to map it
-     * in this process space */
-    mHeap = new MemoryHeapBase(mFD, buffer_size, MemoryHeapBase::NO_CACHING, 0);
-    completeInitialization();
-#endif
-}
 
-QualcommCameraHardware::DispMemPool::~DispMemPool()
-{
-    /* Not much to do in destructor for now */
-    ALOGV(" ~DispMemPool : E ");
-    mFD = -1;
-    ALOGV(" ~DispMemPool : X ");
-}
 status_t QualcommCameraHardware::setOrientation(const CameraParameters& params)
 {
     const char *str = params.get("orientation");
@@ -8875,380 +8223,9 @@ sp<QualcommCameraHardware::MMCameraDL> QualcommCameraHardware::MMCameraDL::getIn
     return mmCamera;
 }
 
-QualcommCameraHardware::MemPool::MemPool(int buffer_size, int num_buffers,
-                                         int frame_size,
-                                         const char *name) :
-    mBufferSize(buffer_size),
-    mNumBuffers(num_buffers),
-    mFrameSize(frame_size),
-    mBuffers(NULL), mName(name)
-{
-    int page_size_minus_1 = getpagesize() - 1;
-    mAlignedBufferSize = (buffer_size + page_size_minus_1) & (~page_size_minus_1);
-}
-
-void QualcommCameraHardware::MemPool::completeInitialization()
-{
-    // If we do not know how big the frame will be, we wait to allocate
-    // the buffers describing the individual frames until we do know their
-    // size.
-
-    if (mFrameSize > 0) {
-	    ALOGE("Before new Mem BASE #buffers :%d",mNumBuffers);
-        mBuffers = new sp<MemoryBase>[mNumBuffers];
-        for (int i = 0; i < mNumBuffers; i++) {
-            mBuffers[i] = new
-                MemoryBase(mHeap,
-                           i * mAlignedBufferSize,
-                           mFrameSize);
-        }
-    }
-}
-
-QualcommCameraHardware::AshmemPool::AshmemPool(int buffer_size, int num_buffers,
-                                               int frame_size,
-                                               const char *name) :
-    QualcommCameraHardware::MemPool(buffer_size,
-                                    num_buffers,
-                                    frame_size,
-                                    name)
-{
-    ALOGV("constructing MemPool %s backed by ashmem: "
-         "%d frames @ %d uint8_ts, "
-         "buffer size %d",
-         mName,
-         num_buffers, frame_size, buffer_size);
-
-    int page_mask = getpagesize() - 1;
-    int ashmem_size = buffer_size * num_buffers;
-    ashmem_size += page_mask;
-    ashmem_size &= ~page_mask;
-
-    mHeap = new MemoryHeapBase(ashmem_size);
-
-    completeInitialization();
-}
-
 bool QualcommCameraHardware::register_record_buffers(bool register_buffer) {
     ALOGI("%s: (%d) E", __FUNCTION__, register_buffer);
-    struct msm_pmem_info pmemBuf;
-#if 0
-    for (int cnt = 0; cnt < kRecordBufferCount; ++cnt) {
-        pmemBuf.type     = MSM_PMEM_VIDEO;
-        pmemBuf.fd       = mRecordHeap->mHeap->getHeapID();
-        pmemBuf.offset   = mRecordHeap->mAlignedBufferSize * cnt;
-        pmemBuf.len      = mRecordHeap->mBufferSize;
-        pmemBuf.vaddr    = (uint8_t *)mRecordHeap->mHeap->base() + mRecordHeap->mAlignedBufferSize * cnt;
-        pmemBuf.y_off    = 0;
-        pmemBuf.cbcr_off = recordframes[0].cbcr_off;
-        if(register_buffer == true) {
-            pmemBuf.active   = (cnt<ACTIVE_VIDEO_BUFFERS);
-            if( (mVpeEnabled) && (cnt == kRecordBufferCount-1)) {
-                pmemBuf.type = MSM_PMEM_VIDEO_VPE;
-                pmemBuf.active = 1;
-            }
-        } else {
-            pmemBuf.active   = false;
-        }
-
-        ALOGV("register_buf:  reg = %d buffer = %p", !register_buffer,
-          (void *)pmemBuf.vaddr);
-        if(native_start_ops(register_buffer ? CAMERA_OPS_REGISTER_BUFFER :
-                CAMERA_OPS_UNREGISTER_BUFFER ,(void *)&pmemBuf) < 0) {
-            ALOGE("register_buf: MSM_CAM_IOCTL_(UN)REGISTER_PMEM  error %s",
-                strerror(errno));
-            return false;
-        }
-    }
-#endif
     return true;
-}
-
-#if 0
-QualcommCameraHardware::PmemPool::PmemPool(const char *pmem_pool,
-                                           int flags,
-                                           int pmem_type,
-                                           int buffer_size, int num_buffers,
-                                           int frame_size, int cbcr_offset,
-                                           int yOffset, const char *name) :
-    QualcommCameraHardware::MemPool(buffer_size,
-                                    num_buffers,
-                                    frame_size,
-                                    name),
-    mPmemType(pmem_type),
-    mCbCrOffset(cbcr_offset),
-    myOffset(yOffset)
-{
-    ALOGI("constructing MemPool %s backed by pmem pool %s: "
-         "%d frames @ %d bytes, buffer size %d",
-         mName,
-         pmem_pool, num_buffers, frame_size,
-         buffer_size);
-
-    mMMCameraDLRef = QualcommCameraHardware::MMCameraDL::getInstance();
-
-
-    // Make a new mmap'ed heap that can be shared across processes.
-    // mAlignedBufferSize is already in 4k aligned. (do we need total size necessary to be in power of 2??)
-    mAlignedSize = mAlignedBufferSize * num_buffers;
-
-    sp<MemoryHeapBase> masterHeap =
-        new MemoryHeapBase(pmem_pool, mAlignedSize, flags);
-
-    if (masterHeap->getHeapID() < 0) {
-        ALOGE("failed to construct master heap for pmem pool %s", pmem_pool);
-        masterHeap.clear();
-        return;
-    }
-
-    sp<MemoryHeapPmem> pmemHeap = new MemoryHeapPmem(masterHeap, flags);
-    if (pmemHeap->getHeapID() >= 0) {
-        pmemHeap->slap();
-        masterHeap.clear();
-        mHeap = pmemHeap;
-        pmemHeap.clear();
-
-        mFd = mHeap->getHeapID();
-        if (::ioctl(mFd, PMEM_GET_SIZE, &mSize)) {
-            ALOGE("pmem pool %s ioctl(PMEM_GET_SIZE) error %s (%d)",
-                 pmem_pool,
-                 ::strerror(errno), errno);
-            mHeap.clear();
-            return;
-        }
-
-        ALOGV("pmem pool %s ioctl(fd = %d, PMEM_GET_SIZE) is %ld",
-             pmem_pool,
-             mFd,
-             mSize.len);
-        ALOGD("mBufferSize=%d, mAlignedBufferSize=%d\n", mBufferSize, mAlignedBufferSize);
-        // Unregister preview buffers with the camera drivers.  Allow the VFE to write
-        // to all preview buffers except for the last one.
-        // Only Register the preview, snapshot and thumbnail buffers with the kernel.
-        if( (strcmp("postview", mName) != 0) ){
-            int num_buf = num_buffers;
-            if(!strcmp("preview", mName)) num_buf = kTotalPreviewBufferCount;
-            ALOGD("num_buffers = %d", num_buf);
-            for (int cnt = 0; cnt < num_buf; ++cnt) {
-                int active = 1;
-                if(pmem_type == MSM_PMEM_VIDEO){
-                     active = (cnt<ACTIVE_VIDEO_BUFFERS);
-                     //When VPE is enabled, set the last record
-                     //buffer as active and pmem type as PMEM_VIDEO_VPE
-                     //as this is a requirement from VPE operation.
-                     //No need to set this pmem type to VIDEO_VPE while unregistering,
-                     //because as per camera stack design: "the VPE AXI is also configured
-                     //when VFE is configured for VIDEO, which is as part of preview
-                     //initialization/start. So during this VPE AXI config camera stack
-                     //will lookup the PMEM_VIDEO_VPE buffer and give it as o/p of VPE and
-                     //change it's type to PMEM_VIDEO".
-                     if( (mVpeEnabled) && (cnt == kRecordBufferCount-1)) {
-                         active = 1;
-                         pmem_type = MSM_PMEM_VIDEO_VPE;
-                     }
-                     ALOGV(" pmempool creating video buffers : active %d ", active);
-                }
-                else if (pmem_type == MSM_PMEM_PREVIEW){
-                    active = (cnt < ACTIVE_PREVIEW_BUFFERS);
-                }
-                else if ((pmem_type == MSM_PMEM_MAINIMG)
-                     || (pmem_type == MSM_PMEM_THUMBNAIL)){
-                    active = (cnt < ACTIVE_ZSL_BUFFERS);
-                }
-                register_buf(mBufferSize,
-                         mFrameSize, mCbCrOffset, myOffset,
-                         mHeap->getHeapID(),
-                         mAlignedBufferSize * cnt,
-                         (uint8_t *)mHeap->base() + mAlignedBufferSize * cnt,
-                         pmem_type,
-                         active);
-            }
-        }
-
-        completeInitialization();
-    }
-    else ALOGE("pmem pool %s error: could not create master heap!",
-              pmem_pool);
-    ALOGI("%s: (%s) X ", __FUNCTION__, mName);
-}
-
-QualcommCameraHardware::PmemPool::~PmemPool()
-{
-    ALOGI("%s: %s E", __FUNCTION__, mName);
-    if (mHeap != NULL) {
-        // Unregister preview buffers with the camera drivers.
-        //  Only Unregister the preview, snapshot and thumbnail
-        //  buffers with the kernel.
-        if( (strcmp("postview", mName) != 0) ){
-            int num_buffers = mNumBuffers;
-            if(!strcmp("preview", mName)) num_buffers = kTotalPreviewBufferCount;
-            for (int cnt = 0; cnt < num_buffers; ++cnt) {
-                register_buf(mBufferSize,
-                         mFrameSize,
-                         mCbCrOffset,
-                         myOffset,
-                         mHeap->getHeapID(),
-                         mAlignedBufferSize * cnt,
-                         (uint8_t *)mHeap->base() + mAlignedBufferSize * cnt,
-                         mPmemType,
-                         false,
-                         false /* unregister */);
-            }
-        }
-    }
-    mMMCameraDLRef.clear();
-    ALOGI("%s: %s X", __FUNCTION__, mName);
-}
-
-const char QualcommCameraHardware::IonPool::mIonDevName[] = "/dev/ion";
-QualcommCameraHardware::IonPool::IonPool(int ion_heap_id, int flags,
-                                           int ion_type,
-                                           int buffer_size, int num_buffers,
-                                           int frame_size, int cbcr_offset,
-                                           int yOffset, const char *name) :
-    QualcommCameraHardware::MemPool(buffer_size,
-                                    num_buffers,
-                                    frame_size,
-                                    name),
-    mIonType(ion_type),
-    mCbCrOffset(cbcr_offset),
-    myOffset(yOffset)
-{
-    ALOGI("constructing MemPool %s backed by pmem pool %s: "
-         "%d frames @ %d bytes, buffer size %d",
-         mName,
-         mIonDevName, num_buffers, frame_size,
-         buffer_size);
-
-    mMMCameraDLRef = QualcommCameraHardware::MMCameraDL::getInstance();
-
-
-    // Make a new mmap'ed heap that can be shared across processes.
-    // mAlignedBufferSize is already in 4k aligned. (do we need total size necessary to be in power of 2??)
-    mAlignedSize = mAlignedBufferSize * num_buffers;
-    sp<MemoryHeapIon> ionHeap = new MemoryHeapIon(mIonDevName, mAlignedSize,
-                                                  flags, 0x1<<ion_heap_id);
-    if (ionHeap->getHeapID() >= 0) {
-        mHeap = ionHeap;
-        ionHeap.clear();
-
-        mFd = mHeap->getHeapID();
-        ALOGE("ion pool %s fd = %d", mIonDevName, mFd);
-        ALOGE("mBufferSize=%d, mAlignedBufferSize=%d\n",
-                      mBufferSize, mAlignedBufferSize);
-
-        // Unregister preview buffers with the camera drivers.  Allow the VFE to write
-        // to all preview buffers except for the last one.
-        // Only Register the preview, snapshot and thumbnail buffers with the kernel.
-        if( (strcmp("postview", mName) != 0) ){
-            int num_buf = num_buffers;
-            if(!strcmp("preview", mName)) num_buf = kPreviewBufferCount;
-            ALOGD("num_buffers = %d", num_buf);
-            for (int cnt = 0; cnt < num_buf; ++cnt) {
-                int active = 1;
-                if(ion_type == MSM_PMEM_VIDEO){
-                     active = (cnt<ACTIVE_VIDEO_BUFFERS);
-                     //When VPE is enabled, set the last record
-                     //buffer as active and pmem type as PMEM_VIDEO_VPE
-                     //as this is a requirement from VPE operation.
-                     //No need to set this pmem type to VIDEO_VPE while unregistering,
-                     //because as per camera stack design: "the VPE AXI is also configured
-                     //when VFE is configured for VIDEO, which is as part of preview
-                     //initialization/start. So during this VPE AXI config camera stack
-                     //will lookup the PMEM_VIDEO_VPE buffer and give it as o/p of VPE and
-                     //change it's type to PMEM_VIDEO".
-                     if( (mVpeEnabled) && (cnt == kRecordBufferCount-1)) {
-                         active = 1;
-                         ion_type = MSM_PMEM_VIDEO_VPE;
-                     }
-                     ALOGV(" pmempool creating video buffers : active %d ", active);
-                }
-                else if (ion_type == MSM_PMEM_PREVIEW){
-                    active = (cnt < ACTIVE_PREVIEW_BUFFERS);
-                }
-                else if ((ion_type == MSM_PMEM_MAINIMG)
-                     || (ion_type == MSM_PMEM_THUMBNAIL)){
-                    active = (cnt < ACTIVE_ZSL_BUFFERS);
-                }
-                register_buf(mBufferSize,
-                         mFrameSize, mCbCrOffset, myOffset,
-                         mHeap->getHeapID(),
-                         mAlignedBufferSize * cnt,
-                         (uint8_t *)mHeap->base() + mAlignedBufferSize * cnt,
-                         ion_type,
-                         active);
-            }
-        }
-
-        completeInitialization();
-    }
-    else ALOGE("pmem pool %s error: could not create master heap!",
-              mIonDevName);
-    ALOGI("%s: (%s) X ", __FUNCTION__, mName);
-}
-
-QualcommCameraHardware::IonPool::~IonPool()
-{
-    ALOGI("%s: %s E", __FUNCTION__, mName);
-    if (mHeap != NULL) {
-        // Unregister preview buffers with the camera drivers.
-        //  Only Unregister the preview, snapshot and thumbnail
-        //  buffers with the kernel.
-        if( (strcmp("postview", mName) != 0) ){
-            int num_buffers = mNumBuffers;
-            if(!strcmp("preview", mName)) num_buffers = kPreviewBufferCount;
-            for (int cnt = 0; cnt < num_buffers; ++cnt) {
-                register_buf(mBufferSize,
-                         mFrameSize,
-                         mCbCrOffset,
-                         myOffset,
-                         mHeap->getHeapID(),
-                         mAlignedBufferSize * cnt,
-                         (uint8_t *)mHeap->base() + mAlignedBufferSize * cnt,
-                         mIonType,
-                         false,
-                         false /* unregister */);
-            }
-        }
-    }
-    mMMCameraDLRef.clear();
-    ALOGI("%s: %s X", __FUNCTION__, mName);
-}
-#endif
-
-QualcommCameraHardware::MemPool::~MemPool()
-{
-    ALOGV("destroying MemPool %s", mName);
-    if (mFrameSize > 0)
-        delete [] mBuffers;
-    mHeap.clear();
-    ALOGV("destroying MemPool %s completed", mName);
-}
-
-status_t QualcommCameraHardware::MemPool::dump(int fd, const Vector<String16>& args) const
-{
-    const size_t SIZE = 256;
-    char buffer[SIZE];
-    String8 result;
-    CAMERA_HAL_UNUSED(args);
-    snprintf(buffer, 255, "QualcommCameraHardware::AshmemPool::dump\n");
-    result.append(buffer);
-    if (mName) {
-        snprintf(buffer, 255, "mem pool name (%s)\n", mName);
-        result.append(buffer);
-    }
-    if (mHeap != 0) {
-        snprintf(buffer, 255, "heap base(%p), size(%d), flags(%d), device(%s)\n",
-                 mHeap->getBase(), mHeap->getSize(),
-                 mHeap->getFlags(), mHeap->getDevice());
-        result.append(buffer);
-    }
-    snprintf(buffer, 255,
-             "buffer size (%d), number of buffers (%d), frame size(%d)",
-             mBufferSize, mNumBuffers, mFrameSize);
-    result.append(buffer);
-    write(fd, result.string(), result.size());
-    return NO_ERROR;
 }
 
 static void receive_camframe_callback(struct msm_frame *frame)
@@ -9368,15 +8345,6 @@ int32_t QualcommCameraHardware::getNumberOfVideoBuffers() {
     return kRecordBufferCount;
 }
 
-sp<IMemory> QualcommCameraHardware::getVideoBuffer(int32_t index) {
-   if(index > kRecordBufferCount)
-     return NULL;
-   else
-     return NULL;
-#if 0
-        return  mRecordHeap->mBuffers[index];
-#endif
-}
 void QualcommCameraHardware::enableMsgType(int32_t msgType)
 {
     Mutex::Autolock lock(mLock);
@@ -9430,76 +8398,6 @@ static void receive_camframe_error_callback(camera_error_type err) {
     }
 }
 
-bool QualcommCameraHardware::storePreviewFrameForPostview(void) {
-    ALOGV("storePreviewFrameForPostview : E ");
-
-    /* Since there is restriction on the maximum overlay dimensions
-     * that can be created, we use the last preview frame as postview
-     * for 7x30. */
-    ALOGV("Copying the preview buffer to postview buffer %d  ",
-         mPreviewFrameSize);
-    if(mLastPreviewFrameHeap == NULL) {
-        int CbCrOffset = PAD_TO_WORD(mPreviewFrameSize * 2/3);
-#if 0
-#ifdef USE_ION
-
-        mLastPreviewFrameHeap =
-           new IonPool(ION_HEAP_ADSP_ID,
-           MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-           MSM_PMEM_PREVIEW, //MSM_PMEM_OUTPUT2,
-           mPreviewFrameSize,
-           1,
-           mPreviewFrameSize,
-           CbCrOffset,
-           0,
-           "postview");
-#else
-        mLastPreviewFrameHeap =
-           new PmemPool("/dev/pmem_adsp",
-           MemoryHeapBase::READ_ONLY | MemoryHeapBase::NO_CACHING,
-           MSM_PMEM_PREVIEW, //MSM_PMEM_OUTPUT2,
-           mPreviewFrameSize,
-           1,
-           mPreviewFrameSize,
-           CbCrOffset,
-           0,
-           "postview");
-#endif
-           if (!mLastPreviewFrameHeap->initialized()) {
-               mLastPreviewFrameHeap.clear();
-               ALOGE(" Failed to initialize Postview Heap");
-               return false;
-            }
-#endif
-    }
-#if 0
-    if( mLastPreviewFrameHeap != NULL && mLastQueuedFrame != NULL) {
-        memcpy(mLastPreviewFrameHeap->mHeap->base(),
-               (uint8_t *)mLastQueuedFrame, mPreviewFrameSize );
-
-        if(mUseOverlay && !mZslPanorama) {
-            //mOverlayLock.lock();
-            //if(mOverlay != NULL){
-                //mOverlay->setFd(mLastPreviewFrameHeap->mHeap->getHeapID());
-                if( zoomCropInfo.w !=0 && zoomCropInfo.h !=0) {
-                    ALOGE("zoomCropInfo non-zero, setting crop ");
-                    ALOGE("setCrop with %dx%d and %dx%d", zoomCropInfo.x, zoomCropInfo.y, zoomCropInfo.w, zoomCropInfo.h);
-                   // mOverlay->setCrop(zoomCropInfo.x, zoomCropInfo.y,
-                               //zoomCropInfo.w, zoomCropInfo.h);
-                }
-                ALOGV("Queueing Postview with last frame till the snapshot is done ");
-                //mOverlay->queueBuffer((void *)0);
-            }
-            //mOverlayLock.unlock();
-        }
-
-    } else
-        ALOGE("Failed to store Preview frame. No Postview ");
-#endif
-    ALOGV("storePreviewFrameForPostview : X ");
-    return true;
-}
-
 bool QualcommCameraHardware::isValidDimension(int width, int height) {
     bool retVal = FALSE;
     /* This function checks if a given resolution is valid or not.
@@ -9525,48 +8423,6 @@ bool QualcommCameraHardware::isValidDimension(int width, int height) {
         }
     }
     return retVal;
-}
-status_t QualcommCameraHardware::getBufferInfo(sp<IMemory>& Frame, size_t *alignedSize) {
-    status_t ret;
-    ALOGV(" getBufferInfo : E ");
-    if( ( mCurrentTarget == TARGET_MSM7630 ) || (mCurrentTarget == TARGET_QSD8250) || (mCurrentTarget == TARGET_MSM8660) )
-    {
-    if( mRecordHeap != NULL){
-        ALOGV(" Setting valid buffer information ");
-        Frame = mRecordHeap->mBuffers[0];
-        if( alignedSize != NULL) {
-            *alignedSize = mRecordHeap->mAlignedBufferSize;
-            ALOGV(" HAL : alignedSize = %d ", *alignedSize);
-            ret = NO_ERROR;
-        } else {
-                ALOGE(" HAL : alignedSize is NULL. Cannot update alignedSize ");
-                ret = UNKNOWN_ERROR;
-        }
-        } else {
-        ALOGE(" RecordHeap is null. Buffer information wont be updated ");
-        Frame = NULL;
-        ret = UNKNOWN_ERROR;
-    }
-    } else {
-    if(mPreviewHeap != NULL) {
-        ALOGV(" Setting valid buffer information ");
-       // Frame = mPreviewHeap->mBuffers[0];
-        if( alignedSize != NULL) {
-            //*alignedSize = mPreviewHeap->mAlignedBufferSize;
-                ALOGV(" HAL : alignedSize = %d ", *alignedSize);
-                ret = NO_ERROR;
-            } else {
-                ALOGE(" HAL : alignedSize is NULL. Cannot update alignedSize ");
-                ret = UNKNOWN_ERROR;
-            }
-    } else {
-            ALOGE(" PreviewHeap is null. Buffer information wont be updated ");
-            Frame = NULL;
-            ret = UNKNOWN_ERROR;
-    }
-    }
-    ALOGV(" getBufferInfo : X ");
-    return ret;
 }
 
 void QualcommCameraHardware::encodeData() {
