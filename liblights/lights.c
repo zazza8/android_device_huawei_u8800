@@ -193,15 +193,15 @@ set_speaker_light_locked(struct light_device_t* dev,
 
     write_int(LED_LOCK_UPDATE_FILE, 1); // for LED On/Off synchronization
 
-    write_int(RED_LED_FILE, red);
-    write_int(GREEN_LED_FILE, green);
-    write_int(BLUE_LED_FILE, blue);
-
     if (blink) {
         write_int(RED_FREQ_FILE, freq);
         write_int(RED_PWM_FILE, pwm);
     }
     write_int(RED_BLINK_FILE, blink);
+
+    write_int(RED_LED_FILE, red);
+    write_int(GREEN_LED_FILE, green);
+    write_int(BLUE_LED_FILE, blue);
 
     write_int(LED_LOCK_UPDATE_FILE, 0);
 
