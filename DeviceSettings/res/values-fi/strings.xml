@@ -1,6 +1,0 @@
-<resources>
-    <string name="app_name">Laitteen asetukset</string>
-    <string name="toast_replug_headset">Kytke kuulokkeet uudelleen.</string>
-    <string name="not_usb_host_title">USB-isäntä on päällä</string>
-    <string name="not_usb_host_text">Paina sammuttaaksesi</string>
-</resources>

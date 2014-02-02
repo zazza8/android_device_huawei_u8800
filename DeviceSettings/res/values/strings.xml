@@ -1,6 +1,0 @@
-<resources>
-    <string name="app_name">Device Settings</string>
-    <string name="toast_replug_headset">Please replug headset.</string>
-    <string name="not_usb_host_title">USB Host on</string>
-    <string name="not_usb_host_text">Click to turn off</string>
-</resources>
