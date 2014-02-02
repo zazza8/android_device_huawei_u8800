@@ -119,6 +119,7 @@ PRODUCT_PACKAGES += \
 
 # Additional packages
 PRODUCT_PACKAGES += \
+	IDEOSX5Settings \
 	DeviceSettings
 
 # Hardware MAC address tool

@@ -28,8 +28,9 @@
 #
 
 on init
-    # Device Settings
+    # IDEOS X5 Settings
     chown system system /sys/devices/platform/msm_otg/mode
+    chown system system /sys/devices/platform/msm_hsusb/gadget/manual_chg_current
 
     # Hardware tunables
     chown root system /sys/class/timed_output/vibrator/voltage_level
