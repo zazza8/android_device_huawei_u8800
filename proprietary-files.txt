@@ -119,3 +119,9 @@ system/lib/libgemini.so
 system/lib/libmmipl.so
 -system/lib/libmmjpeg.so
 system/lib/liboemcamera.so
+
+# FM Radio Firmware Loader
+system/bin/fm_qsoc_patches
+
+# FM Radio Dependencies
+system/lib/libqmiservices.so
