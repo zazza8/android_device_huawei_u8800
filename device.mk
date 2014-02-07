@@ -140,7 +140,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Audio
 PRODUCT_PROPERTY_OVERRIDES += \
 	lpa.decode=true \
-	use.non-omx.mp3.decoder=true \
 	ro.hs_intmic.supported=1
 
 # Graphics
