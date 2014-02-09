@@ -34,8 +34,8 @@
 #define PROX_SAMPLES		3
 
 /* Values after converting the range. */
-#define PROX_HIGH_THRESHOLD 800
-#define PROX_LOW_THRESHOLD  700
+#define PROX_HIGH_THRESHOLD 700
+#define PROX_LOW_THRESHOLD  600
 
 /*****************************************************************************/
 
