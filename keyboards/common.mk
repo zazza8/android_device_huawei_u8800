@@ -20,7 +20,7 @@
 keylayouts := \
 	7k_handset.kl \
 	atmel_mxt_ts.kl \
-	synaptics_rmi4_i2c.kl
+	sensor00fn11.kl
 
 keycharmaps := #\
 #	Generic.kcm \
@@ -30,4 +30,4 @@ keycharmaps := #\
 
 keyconfigs := \
 	atmel_mxt_ts.idc \
-	synaptics_rmi4_i2c.idc
+	sensor00fn11.idc
