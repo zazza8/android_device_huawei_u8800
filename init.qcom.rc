@@ -78,6 +78,8 @@ on boot
     write /proc/sys/net/ipv6/conf/rmnet6/accept_ra 2
     write /proc/sys/net/ipv6/conf/rmnet7/accept_ra 2
 
+    chown system system /sys/class/leds/red/device/lock
+
 # msm specific files that need to be created on /data
 on post-fs-data
     # Create the directories used by the Wireless subsystem
