@@ -114,10 +114,6 @@ PRODUCT_PACKAGES += \
 	sensors.u8800 \
 	gps.u8800
 
-# Filesystem management tools
-PRODUCT_PACKAGES += \
-	e2fsck
-
 # FM radio
 PRODUCT_PACKAGES += \
 	qcom.fmradio \
