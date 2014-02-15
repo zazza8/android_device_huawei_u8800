@@ -35,4 +35,6 @@ on boot
     write /sys/class/leds/lcd-backlight/brightness 127
     write /sys/class/leds/button-backlight/brightness 127
 
+    mkdir /cust
+
 service rmt_storage /sbin/rmt_storage

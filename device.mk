@@ -186,4 +186,4 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 
 # Recovery
 PRODUCT_PROPERTY_OVERRIDES += \
-	ro.cwm.forbid_format=/boot,/recovery
+	ro.cwm.forbid_format=/boot,/recovery,/cust
