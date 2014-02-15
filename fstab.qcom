@@ -11,5 +11,5 @@
 /devices/platform/msm_sdcc.2/mmc_host/mmc0              auto            vfat    defaults                        voldmanaged=sdcard1:14,nonremovable,noemulatedsd
 /devices/platform/msm_hsusb_host.0                      auto            auto    defaults                        voldmanaged=usbdisk0:auto
 
-/dev/block/platform/msm_sdcc.2/by-num/p1                /boot           vfat    defaults                        defaults
-/dev/null                                               /recovery       emmc    defaults                        defaults
+/dev/block/platform/msm_sdcc.2/by-num/p1                /boot           vfat    defaults                        recoveryonly
+/dev/null                                               /recovery       emmc    defaults                        recoveryonly
