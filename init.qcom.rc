@@ -48,6 +48,7 @@ on init
 on fs
     mkdir /cust
     mount_all ./fstab.qcom
+    swapon_all ./fstab.qcom
 
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB

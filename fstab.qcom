@@ -14,3 +14,6 @@
 /dev/block/platform/msm_sdcc.2/by-num/p1                /cust           vfat    ro                              defaults
 /dev/block/platform/msm_sdcc.2/by-num/p1                /boot           vfat    defaults                        recoveryonly
 /dev/null                                               /recovery       emmc    defaults                        recoveryonly
+
+# zRAM
+/dev/block/zram0                                        none            swap    defaults                        zramsize=67108864
