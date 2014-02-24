@@ -180,10 +180,6 @@ set_speaker_light_locked(struct light_device_t* dev,
         // pwm = 255 => always on
         pwm = (onMS * 255) / totalMS;
 
-        // the low 4 bits are ignored, so round up if necessary
-        if (pwm > 0 && pwm < 16)
-            pwm = 16;
-
         blink = 1;
     } else {
         blink = 0;
