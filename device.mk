@@ -18,16 +18,16 @@
 $(call inherit-product, device/common/gps/gps_eu_supl.mk)
 
 # Include proprietary stuff
-$(call inherit-product-if-exists, vendor/huawei/u8800/u8800-vendor.mk)
+$(call inherit-product, vendor/huawei/u8800/u8800-vendor.mk)
 
 # Use standard dalvik heap sizes
 $(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
 
 # Include keyboards
-$(call inherit-product-if-exists, device/huawei/u8800/keyboards/keyboards.mk)
+$(call inherit-product, device/huawei/u8800/keyboards/keyboards.mk)
 
 # Include scripts
-$(call inherit-product-if-exists, device/huawei/u8800/initscripts/initscripts.mk)
+$(call inherit-product, device/huawei/u8800/initscripts/initscripts.mk)
 
 DEVICE_PACKAGE_OVERLAYS += device/huawei/u8800/overlay
 

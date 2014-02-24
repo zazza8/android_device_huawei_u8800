@@ -23,7 +23,7 @@
 USE_CAMERA_STUB := true
 
 # Inherit from the proprietary version if exists
--include vendor/huawei/u8800/BoardConfigVendor.mk
+include vendor/huawei/u8800/BoardConfigVendor.mk
 
 TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
