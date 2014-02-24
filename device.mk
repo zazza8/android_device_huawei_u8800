@@ -26,9 +26,6 @@ $(call inherit-product, frameworks/native/build/phone-hdpi-512-dalvik-heap.mk)
 # Include keyboards
 $(call inherit-product, device/huawei/u8800/keyboards/keyboards.mk)
 
-# Include scripts
-$(call inherit-product, device/huawei/u8800/initscripts/initscripts.mk)
-
 DEVICE_PACKAGE_OVERLAYS += device/huawei/u8800/overlay
 
 # U8800 uses high-density artwork where available
