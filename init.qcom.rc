@@ -82,6 +82,10 @@ on boot
 
     chown system system /sys/class/leds/red/device/lock
 
+    write /sys/kernel/mm/ksm/pages_to_scan 100
+    write /sys/kernel/mm/ksm/sleep_millisecs 500
+    write /sys/kernel/mm/ksm/run 1
+
 # msm specific files that need to be created on /data
 on post-fs-data
     # Create the directories used by the Wireless subsystem
