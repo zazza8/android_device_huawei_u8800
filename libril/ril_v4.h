@@ -63,6 +63,13 @@ typedef struct {
     char             *depersonalizationCode;
 } RIL_Depersonalization_v4;
 
+typedef struct {
+    RIL_SimRefreshResult     refreshResult;      /* Sim Refresh result */
+    char                    *aidPtr;             /* null terminated string, e.g., from 0xA0, 0x00
+                                                    0x41, 0x30*/
+    int                      efId;               /* EFID */
+} RIL_SimRefreshResponse_v4;
+
 #define RIL_REQUEST_VOICE_RADIO_TECH_V4 105
 #define RIL_REQUEST_IMS_REGISTRATION_STATE_V4 106
 #define RIL_REQUEST_IMS_SEND_SMS_V4 107

@@ -2412,15 +2412,16 @@ static int responseSimRefresh(Parcel &p, void *response, size_t responselen) {
                 p_cur->ef_id,
                 p_cur->aid);
     } else {
-        int *p_cur = ((int *) response);
-        p.writeInt32(p_cur[0]);
-        p.writeInt32(p_cur[1]);
-        writeStringToParcel(p, NULL);
+        RIL_SimRefreshResponse_v4 *p_cur = ((RIL_SimRefreshResponse_v4 *) response);
+        p.writeInt32(p_cur->refreshResult);
+        p.writeInt32(p_cur->efId);
+        writeStringToParcel(p, p_cur->aidPtr);
 
-        appendPrintBuf("%sresult=%d, ef_id=%d",
+        appendPrintBuf("%sresult=%d, ef_id=%d, aid=%s",
                 printBuf,
-                p_cur[0],
-                p_cur[1]);
+                p_cur->refreshResult,
+                p_cur->efId,
+                p_cur->aidPtr);
     }
     closeResponse;
 

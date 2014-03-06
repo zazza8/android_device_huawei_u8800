@@ -141,10 +141,11 @@ public class GBQualcommRIL extends RIL implements CommandsInterface {
 
     @Override
     public void
-    supplyNetworkDepersonalization(String netpin, Message result) {
-        RILRequest rr = RILRequest.obtain(RIL_REQUEST_ENTER_NETWORK_DEPERSONALIZATION, result);
+    supplyDepersonalization(String netpin, String type, Message result) {
+        RILRequest rr = RILRequest.obtain(RIL_REQUEST_ENTER_DEPERSONALIZATION_CODE, result);
 
-        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest));
+        if (RILJ_LOGD) riljLog(rr.serialString() + "> " + requestToString(rr.mRequest) +
+                        " Type:" + type);
 
         rr.mParcel.writeInt(3);
         rr.mParcel.writeString(netpin);
