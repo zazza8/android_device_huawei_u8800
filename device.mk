@@ -122,9 +122,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	IDEOSX5Settings
 
-# Hardware MAC address tool
+# Hardware Property Writer
 PRODUCT_PACKAGES += \
-	hwmac
+	hwprops
 
 PRODUCT_PROPERTY_OVERRIDES += \
 	ro.sf.lcd_density=240 \

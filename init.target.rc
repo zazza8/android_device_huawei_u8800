@@ -38,16 +38,13 @@ on init
     restorecon /sys/class/timed_output/vibrator/voltage_level
 
 on post-fs-data
+    mkdir /data/misc/hwprops 0770 system system
     mkdir /data/misc/sensors 0770 system system
 
 # SDC3 (SDIO) needs to have polling enabled
 on property:wlan.driver.status=loading
     write /sys/devices/platform/msm_sdcc.3/polling 1
 
-service hwmac /system/bin/hwmac
+service hwprops /system/bin/hwprops
     class main
     oneshot
-
-# Reload the MAC address
-on property:wlan.driver.status=unloaded
-    start hwmac
