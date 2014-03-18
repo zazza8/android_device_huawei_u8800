@@ -6186,26 +6186,18 @@ status_t QualcommCameraHardware::setVpeParameters()
     ALOGV("setVpeParameters E");
 
     video_rotation_param_ctrl_t rotCtrl;
-    bool ret = true;
-    ALOGV("videoWidth = %d, videoHeight = %d", videoWidth, videoHeight);
-    int rotation = (mRotation + sensor_rotation)%360;
-    rotCtrl.rotation = (rotation == 0) ? ROT_NONE :
-                       ((rotation == 90) ? ROT_CLOCKWISE_90 :
-                  ((rotation == 180) ? ROT_CLOCKWISE_180 : ROT_CLOCKWISE_270));
-
-    if( ((videoWidth == 1280 && videoHeight == 720) || (videoWidth == 800 && videoHeight == 480))
-        && (rotation == 90 || rotation == 270) ){
-        /* Due to a limitation at video core to support heights greater than 720, adding this check.
-         * This is a temporary hack, need to be removed once video core support is available
-         */
-        ALOGI("video resolution (%dx%d) with rotation (%d) is not supported, setting rotation to NONE",
-            videoWidth, videoHeight, rotation);
+    if (sensor_rotation == 0)
         rotCtrl.rotation = ROT_NONE;
-    }
+    else if (sensor_rotation == 90)
+        rotCtrl.rotation = ROT_CLOCKWISE_90;
+    else if (sensor_rotation == 180)
+        rotCtrl.rotation = ROT_CLOCKWISE_180;
+    else
+        rotCtrl.rotation = ROT_CLOCKWISE_270;
+
     ALOGV("rotCtrl.rotation = %d", rotCtrl.rotation);
 
-    ret = native_set_parms(CAMERA_PARM_VIDEO_ROT,
-                           sizeof(rotCtrl), &rotCtrl);
+    bool ret = native_set_parms(CAMERA_PARM_VIDEO_ROT, sizeof(rotCtrl), &rotCtrl);
 
     ALOGV("setVpeParameters X (%d)", ret);
     return ret ? NO_ERROR : UNKNOWN_ERROR;
