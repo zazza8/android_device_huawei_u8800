@@ -6868,34 +6868,15 @@ status_t QualcommCameraHardware::setRecordSize(const CameraParameters& params)
     return NO_ERROR;
 }
 
-status_t  QualcommCameraHardware::setCameraMode(const CameraParameters& params) {
+status_t QualcommCameraHardware::setCameraMode(const CameraParameters& params)
+{
     int32_t value = params.getInt(CameraParameters::KEY_CAMERA_MODE);
-    mParameters.set(CameraParameters::KEY_CAMERA_MODE,value);
+    if (mCurrentTarget != TARGET_MSM8660 && value == 1) {
+        return NO_ERROR; /* Not supported */
+    }
 
-    ALOGI("ZSL is enabled  %d", value);
-    if( value != mZslEnable) {
-        mFrameThreadWaitLock.lock();
-        while (mFrameThreadRunning) {
-          ALOGI("initPreview: waiting for old frame thread to complete.");
-          mFrameThreadWait.wait(mFrameThreadWaitLock);
-          ALOGI("initPreview: old frame thread completed.");
-        }
-        mFrameThreadWaitLock.unlock();
-    }
-    if(value == 1) {
-        return BAD_VALUE;
-        mZslEnable = true;
-       /* mParameters.set(CameraParameters::KEY_SUPPORTED_FOCUS_MODES,
-                       CameraParameters::FOCUS_MODE_INFINITY);
-        mParameters.set(CameraParameters::KEY_FOCUS_MODE,
-                       CameraParameters::FOCUS_MODE_INFINITY);*/
-    }else{
-        mZslEnable = false;
-        /*mParameters.set(CameraParameters::KEY_SUPPORTED_FOCUS_MODES,
-                    focus_mode_values);
-        mParameters.set(CameraParameters::KEY_FOCUS_MODE,
-                    CameraParameters::FOCUS_MODE_AUTO);*/
-    }
+    mZslEnable = value;
+    mParameters.set(CameraParameters::KEY_CAMERA_MODE, value);
     return NO_ERROR;
 }
 
