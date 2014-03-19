@@ -2272,6 +2272,8 @@ static uint16_t flashMode;
 static int iso_arr[] = { 0, 1, 100, 200, 400, 800, 1600 };
 static uint16_t isoMode;
 static char gpsProcessingMethod[EXIF_ASCII_PREFIX_SIZE + GPS_PROCESSING_METHOD_SIZE];
+static char exif_maker[PROPERTY_VALUE_MAX];
+static char exif_model[PROPERTY_VALUE_MAX];
 static char exif_date[20];
 static void addExifTag(exif_tag_id_t tagid, exif_tag_type_t type,
     uint32_t count, uint8_t copy, void *data)
@@ -2427,6 +2429,13 @@ void QualcommCameraHardware::setGpsParameters(void)
 
 void QualcommCameraHardware::setExifInfo(void)
 {
+    // set manufacturer & model
+    property_get("ro.product.manufacturer", exif_maker, "QCOM-AA");
+    addExifTag(EXIFTAGID_MAKER, EXIF_ASCII, strlen(exif_maker) + 1, 1, exif_maker);
+
+    property_get("ro.product.model", exif_model, "QCAM-AA");
+    addExifTag(EXIFTAGID_MODEL, EXIF_ASCII, strlen(exif_model) + 1, 1, exif_model);
+
     // set timestamp
     const char *date_str = mParameters.get(CameraParameters::KEY_EXIF_DATETIME);
     if (date_str) {
