@@ -110,7 +110,6 @@ public:
     virtual status_t takePicture();
     virtual status_t takeLiveSnapshot();
     virtual status_t takeLiveSnapshotInternal();
-    void set_liveshot_exifinfo();
     virtual status_t cancelPicture();
     virtual status_t setParameters(const CameraParameters& params);
     virtual CameraParameters getParameters() const;
@@ -130,7 +129,6 @@ public:
     void receiveCameraStats(camstats_type stype, camera_preview_histogram_info* histinfo);
     void receiveRecordingFrame(struct msm_frame *frame);
     void receiveJpegPicture(status_t status, mm_camera_buffer_t *encoded_buffer);
-    void jpeg_set_location();
     void receiveJpegPictureFragment(uint8_t *buf, uint32_t size);
     void notifyShutter(bool mPlayShutterSoundOnly);
     void receive_camframe_error_timeout();
@@ -370,7 +368,8 @@ private:
     status_t setDenoise(const CameraParameters& params);
     status_t setZslParam(const CameraParameters& params);
     status_t setSnapshotCount(const CameraParameters& params);
-    void setGpsParameters();
+    void setGpsParameters(void);
+    void setExifInfo(void);
     bool isValidDimension(int w, int h);
     status_t updateFocusDistances(const char *focusmode);
     int mStoreMetaDataInFrame;
