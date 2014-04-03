@@ -1,6 +1,5 @@
 ifneq ($(USE_CAMERA_STUB),true)
 ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
-ifneq ($(BUILD_TINY_ANDROID),true)
 
 LOCAL_PATH := $(call my-dir)
 
@@ -58,6 +57,5 @@ LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
 
-endif # BUILD_TINY_ANDROID
 endif # BOARD_USES_QCOM_HARDWARE
 endif # USE_CAMERA_STUB

@@ -606,13 +606,10 @@ typedef enum {
   CAMERA_BVCM_OFFLINE_CAPTURE
 } camera_bvcm_capture_type;
 
-#ifndef HAVE_CAMERA_SIZE_TYPE
-  #define HAVE_CAMERA_SIZE_TYPE
 struct camera_size_type {
   int width;
   int height;
 };
-#endif
 
 typedef enum {
   CAMERA_SP_NORMAL = 0,

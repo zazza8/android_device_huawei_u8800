@@ -18,21 +18,19 @@
 #ifndef ANDROID_HARDWARE_QUALCOMM_CAMERA_HARDWARE_H
 #define ANDROID_HARDWARE_QUALCOMM_CAMERA_HARDWARE_H
 
-#include <utils/threads.h>
-#include <binder/MemoryBase.h>
-#include <stdint.h>
-#include <hardware/camera.h>
 #include <camera/Camera.h>
 #include <camera/CameraParameters.h>
-#include <system/window.h>
-#include <system/camera.h>
 #include <hardware/camera.h>
 #include <gralloc_priv.h>
+#include <utils/threads.h>
 #include <QComOMXMetadata.h>
 
 extern "C" {
-#include <linux/android_pmem.h>
+#ifdef USE_ION
 #include <linux/ion.h>
+#else
+#include <linux/android_pmem.h>
+#endif
 #include <camera.h>
 }
 
@@ -69,11 +67,6 @@ struct target_map {
     targetType targetEnum;
 };
 
-enum {
-    BUFFER_UNLOCKED,
-    BUFFER_LOCKED
-};
-
 struct board_property{
     targetType target;
     unsigned int previewSizeMask;
@@ -84,7 +77,7 @@ struct board_property{
 
 namespace android {
 
-class QualcommCameraHardware : public RefBase{
+class QualcommCameraHardware {
 public:
 
     void setCallbacks(camera_notify_callback notify_cb,
@@ -134,9 +127,11 @@ public:
     void receive_camframe_error_timeout();
     static void getCameraInfo();
     void receiveRawPicture(status_t status,struct msm_frame *postviewframe, struct msm_frame *mainframe);
+#ifdef USE_ION
     int allocate_ion_memory(int *main_ion_fd, struct ion_allocation_data* alloc,
-    struct ion_fd_data* ion_info_fd, int ion_type, int size, int *memfd);
+        struct ion_fd_data* ion_info_fd, int ion_type, int size, int *memfd);
     int deallocate_ion_memory(int *main_ion_fd, struct ion_fd_data* ion_info_fd);
+#endif
     virtual ~QualcommCameraHardware();
     int storeMetaDataInBuffers(int enable);
 
@@ -154,7 +149,6 @@ private:
     void runAutoFocus();
     status_t cancelAutoFocusInternal();
     bool native_set_dimension (int camfd);
-    bool native_jpeg_encode (void);
     bool updatePictureDimension(const CameraParameters& params, int& width, int& height);
     bool native_set_parms(mm_camera_parm_type_t type, uint16_t length, void *value);
     bool native_set_parms(mm_camera_parm_type_t type, uint16_t length, void *value, int *result);
@@ -176,7 +170,6 @@ private:
     static const int kTotalPreviewBufferCount = kPreviewBufferCount + MIN_UNDEQUEUD_BUFFER_COUNT;
     int numCapture;
     int numJpegReceived;
-    int jpegPadding;
 
     CameraParameters mParameters;
     unsigned int frame_size;
@@ -229,7 +222,7 @@ private:
 	int mapFrame(buffer_handle_t *buffer);
     Mutex mHFRThreadWaitLock;
 
-    class FrameQueue : public RefBase{
+    class FrameQueue {
     private:
         Mutex mQueueLock;
         Condition mQueueWait;
@@ -305,11 +298,7 @@ private:
     Condition mEncodePendingWait;
 	bool mBuffersInitialized;
 
-    void debugShowPreviewFPS() const;
-    void debugShowVideoFPS() const;
-
     int mSnapshotFormat;
-    bool mFirstFrame;
     void hasAutoFocusSupport();
     void filterPictureSizes();
     void filterPreviewSizes();
@@ -363,7 +352,6 @@ private:
     status_t setPreviewFormat(const CameraParameters& params);
     status_t setSelectableZoneAf(const CameraParameters& params);
     status_t setHighFrameRate(const CameraParameters& params);
-    bool register_record_buffers(bool register_buffer);
     status_t setRedeyeReduction(const CameraParameters& params);
     status_t setDenoise(const CameraParameters& params);
     status_t setZslParam(const CameraParameters& params);
@@ -384,17 +372,9 @@ private:
 
 
     Mutex mCallbackLock;
-    Mutex mOverlayLock;
-	Mutex mRecordLock;
 	Mutex mRecordFrameLock;
 	Condition mRecordWait;
-    Condition mStateWait;
 
-    /* mJpegSize keeps track of the size of the accumulated JPEG.  We clear it
-       when we are about to take a picture, so at any time it contains either
-       zero, or the size of the last JPEG picture taken.
-    */
-    uint32_t mJpegSize;
     unsigned int        mPreviewFrameSize;
     unsigned int        mRecordFrameSize;
     int                 mRawSize;
@@ -418,8 +398,6 @@ private:
     pthread_t mSmoothzoomThread;
     pthread_t mHFRThread;
 
-    common_crop_t mCrop;
-
     bool mInitialized;
 
     int mBrightness;
@@ -439,27 +417,24 @@ private:
     camera_memory_t *mJpegCopyMapped;
     camera_memory_t* metadata_memory[9];
     camera_memory_t *mJpegLiveSnapMapped;
+#ifdef USE_ION
+    int record_main_ion_fd[9];
     int raw_main_ion_fd[MAX_SNAPSHOT_BUFFERS];
     int raw_snapshot_main_ion_fd;
-    int Jpeg_main_ion_fd[MAX_SNAPSHOT_BUFFERS];
-    int record_main_ion_fd[9];
     struct ion_allocation_data raw_alloc[MAX_SNAPSHOT_BUFFERS];
     struct ion_allocation_data raw_snapshot_alloc;
-    struct ion_allocation_data Jpeg_alloc[MAX_SNAPSHOT_BUFFERS];
     struct ion_allocation_data record_alloc[9];
     struct ion_fd_data raw_ion_info_fd[MAX_SNAPSHOT_BUFFERS];
     struct ion_fd_data raw_snapshot_ion_info_fd;
-    struct ion_fd_data Jpeg_ion_info_fd[MAX_SNAPSHOT_BUFFERS];
     struct ion_fd_data record_ion_info_fd[9];
+#endif
 
     struct msm_frame frames[kPreviewBufferCount + MIN_UNDEQUEUD_BUFFER_COUNT];
     struct buffer_map frame_buffer[kPreviewBufferCount + MIN_UNDEQUEUD_BUFFER_COUNT];
     struct msm_frame *recordframes;
     struct msm_frame *rawframes;
     bool *record_buffers_tracking_flag;
-    bool mInPreviewCallback;
     preview_stream_ops_t* mPreviewWindow;
-    android_native_buffer_t *mPostViewBuffer;
     buffer_handle_t *mThumbnailBuffer[MAX_SNAPSHOT_BUFFERS];
     bool mIs3DModeOn;
 
@@ -469,10 +444,8 @@ private:
     camera_data_timestamp_callback mDataCallbackTimestamp;
     camera_request_memory mGetMemory;
     void *mCallbackCookie;  // same for all callbacks
-    int mDebugFps;
     int kPreviewBufferCountActual;
     int previewWidth, previewHeight;
-    int yv12framesize;
     bool mSnapshotDone;
     int maxSnapshotWidth;
     int maxSnapshotHeight;
@@ -504,13 +477,9 @@ private:
     bool mUseJpegDownScaling;
     bool mPreviewStopping;
     bool mInHFRThread;
-    Mutex mPmemWaitLock;
-    Condition mPmemWait;
     bool mHdrMode;
     bool mExpBracketMode;
-
     bool mMultiTouch;
-
     int mRecordingState;
 };
 

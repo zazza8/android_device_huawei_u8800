@@ -17,66 +17,22 @@
 */
 
 #define LOG_TAG "QualcommCameraHardware"
-#include <utils/Log.h>
+
 #include "QualcommCameraHardware.h"
 
-#include <utils/Errors.h>
-#include <utils/threads.h>
-#include <camera/Camera.h>
-#include <hardware/camera.h>
-#include <utils/String16.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <cutils/properties.h>
 #include <math.h>
-#if HAVE_ANDROID_OS
-#include <linux/android_pmem.h>
-#endif
-#include <linux/ioctl.h>
-#include <camera/CameraParameters.h>
-#include <media/mediarecorder.h>
-#include <gralloc_priv.h>
 
-#include "linux/msm_mdp.h"
-#include <linux/fb.h>
-#define LIKELY(exp)   __builtin_expect(!!(exp), 1)
-#define UNLIKELY(exp) __builtin_expect(!!(exp), 0)
 #define CAMERA_HAL_UNUSED(expr) do { (void)(expr); } while (0)
 
 extern "C" {
 #include <fcntl.h>
-#include <time.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <termios.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/system_properties.h>
-#include <sys/time.h>
-#include <stdlib.h>
-
-
-#include <camera.h>
-
-#define DUMP_LIVESHOT_JPEG_FILE 0
 
 #define DEFAULT_PICTURE_WIDTH  640
 #define DEFAULT_PICTURE_HEIGHT 480
 #define DEFAULT_PICTURE_WIDTH_3D 1920
 #define DEFAULT_PICTURE_HEIGHT_3D 1080
-#define INITIAL_PREVIEW_HEIGHT 144
-#define INITIAL_PREVIEW_WIDTH 176
 
-#define THUMBNAIL_BUFFER_SIZE (THUMBNAIL_WIDTH * THUMBNAIL_HEIGHT * 3/2)
-#define MAX_ZOOM_LEVEL 5
 #define NOT_FOUND -1
 // Number of video buffers held by kernal (initially 1,2 &3)
 #define ACTIVE_VIDEO_BUFFERS 3
@@ -88,8 +44,6 @@ extern "C" {
 #define FLASH_AUTO 24
 #define FLASH_SNAP 32
 
-#define DUMMY_CAMERA_STARTED 1
-#define DUMMY_CAMERA_STOPPED 0
 #define FLOOR16(X) ((X) & 0xFFF0)
 #ifdef DLOPEN_LIBMMCAMERA
 #include <dlfcn.h>
@@ -98,7 +52,6 @@ extern "C" {
 // Conversion routines from YV420sp to YV12 format
 int (*LINK_yuv_convert_ycrcb420sp_to_yv12_inplace) (yuv_image_type* yuvStructPtr);
 int (*LINK_yuv_convert_ycrcb420sp_to_yv12) (yuv_image_type* yuvStructPtrin, yuv_image_type* yuvStructPtrout);
-#define NUM_YV12_FRAMES 1
 #define FOCUS_AREA_INIT "(-1000,-1000,1000,1000,1000)"
 
 void *libmmcamera;
@@ -189,13 +142,6 @@ extern void (*mmcamera_liveshot_callback)(liveshot_status status, uint32_t jpeg_
 
 } // extern "C"
 
-#ifndef HAVE_CAMERA_SIZE_TYPE
-struct camera_size_type {
-    int width;
-    int height;
-};
-#endif
-
 //Default to VGA
 #define DEFAULT_PREVIEW_WIDTH 640
 #define DEFAULT_PREVIEW_HEIGHT 480
@@ -257,10 +203,6 @@ static unsigned int PICTURE_SIZE_COUNT;
 static const camera_size_type * picture_sizes_ptr;
 static int supportedPictureSizesCount;
 static liveshotState liveshot_state = LIVESHOT_DONE;
-
-#ifdef Q12
-#undef Q12
-#endif
 
 #define Q12 4096
 
@@ -337,7 +279,6 @@ static inline unsigned clp2(unsigned x)
 static int exif_table_numEntries = 0;
 #define MAX_EXIF_TABLE_ENTRIES 14
 exif_tags_info_t exif_data[MAX_EXIF_TABLE_ENTRIES];
-//static zoom_crop_info zoomCropInfo;
 static android_native_rect_t zoomCropInfo;
 static void *mLastQueuedFrame = NULL;
 #define RECORD_BUFFERS 9
@@ -376,7 +317,6 @@ namespace android {
 static const int PICTURE_FORMAT_JPEG = 1;
 static const int PICTURE_FORMAT_RAW = 2;
 
-// from aeecamera.h
 static const str_map whitebalance[] = {
     { CameraParameters::WHITE_BALANCE_AUTO,            CAMERA_WB_AUTO },
     { CameraParameters::WHITE_BALANCE_INCANDESCENT,    CAMERA_WB_INCANDESCENT },
@@ -385,7 +325,6 @@ static const str_map whitebalance[] = {
     { CameraParameters::WHITE_BALANCE_CLOUDY_DAYLIGHT, CAMERA_WB_CLOUDY_DAYLIGHT }
 };
 
-// from camera_effect_t. This list must match aeecamera.h
 static const str_map effects[] = {
     { CameraParameters::EFFECT_NONE,       CAMERA_EFFECT_OFF },
     { CameraParameters::EFFECT_MONO,       CAMERA_EFFECT_MONO },
@@ -398,14 +337,12 @@ static const str_map effects[] = {
     { CameraParameters::EFFECT_AQUA,       CAMERA_EFFECT_AQUA }
 };
 
-// from qcamera/common/camera.h
 static const str_map autoexposure[] = {
     { CameraParameters::AUTO_EXPOSURE_FRAME_AVG,  CAMERA_AEC_FRAME_AVERAGE },
     { CameraParameters::AUTO_EXPOSURE_CENTER_WEIGHTED, CAMERA_AEC_CENTER_WEIGHTED },
     { CameraParameters::AUTO_EXPOSURE_SPOT_METERING, CAMERA_AEC_SPOT_METERING }
 };
 
-// from qcamera/common/camera.h
 static const str_map antibanding[] = {
     { CameraParameters::ANTIBANDING_OFF,  CAMERA_ANTIBANDING_OFF },
     { CameraParameters::ANTIBANDING_50HZ, CAMERA_ANTIBANDING_50HZ },
@@ -418,242 +355,6 @@ static const str_map antibanding_3D[] = {
     { CameraParameters::ANTIBANDING_50HZ, CAMERA_ANTIBANDING_50HZ },
     { CameraParameters::ANTIBANDING_60HZ, CAMERA_ANTIBANDING_60HZ }
 };
-
-/* Mapping from MCC to antibanding type */
-struct country_map {
-    uint32_t country_code;
-    camera_antibanding_type type;
-};
-
-#if 0 //not using this function. keeping this as this came from Google.
-static struct country_map country_numeric[] = {
-    { 202, CAMERA_ANTIBANDING_50HZ }, // Greece
-    { 204, CAMERA_ANTIBANDING_50HZ }, // Netherlands
-    { 206, CAMERA_ANTIBANDING_50HZ }, // Belgium
-    { 208, CAMERA_ANTIBANDING_50HZ }, // France
-    { 212, CAMERA_ANTIBANDING_50HZ }, // Monaco
-    { 213, CAMERA_ANTIBANDING_50HZ }, // Andorra
-    { 214, CAMERA_ANTIBANDING_50HZ }, // Spain
-    { 216, CAMERA_ANTIBANDING_50HZ }, // Hungary
-    { 219, CAMERA_ANTIBANDING_50HZ }, // Croatia
-    { 220, CAMERA_ANTIBANDING_50HZ }, // Serbia
-    { 222, CAMERA_ANTIBANDING_50HZ }, // Italy
-    { 226, CAMERA_ANTIBANDING_50HZ }, // Romania
-    { 228, CAMERA_ANTIBANDING_50HZ }, // Switzerland
-    { 230, CAMERA_ANTIBANDING_50HZ }, // Czech Republic
-    { 231, CAMERA_ANTIBANDING_50HZ }, // Slovakia
-    { 232, CAMERA_ANTIBANDING_50HZ }, // Austria
-    { 234, CAMERA_ANTIBANDING_50HZ }, // United Kingdom
-    { 235, CAMERA_ANTIBANDING_50HZ }, // United Kingdom
-    { 238, CAMERA_ANTIBANDING_50HZ }, // Denmark
-    { 240, CAMERA_ANTIBANDING_50HZ }, // Sweden
-    { 242, CAMERA_ANTIBANDING_50HZ }, // Norway
-    { 244, CAMERA_ANTIBANDING_50HZ }, // Finland
-    { 246, CAMERA_ANTIBANDING_50HZ }, // Lithuania
-    { 247, CAMERA_ANTIBANDING_50HZ }, // Latvia
-    { 248, CAMERA_ANTIBANDING_50HZ }, // Estonia
-    { 250, CAMERA_ANTIBANDING_50HZ }, // Russian Federation
-    { 255, CAMERA_ANTIBANDING_50HZ }, // Ukraine
-    { 257, CAMERA_ANTIBANDING_50HZ }, // Belarus
-    { 259, CAMERA_ANTIBANDING_50HZ }, // Moldova
-    { 260, CAMERA_ANTIBANDING_50HZ }, // Poland
-    { 262, CAMERA_ANTIBANDING_50HZ }, // Germany
-    { 266, CAMERA_ANTIBANDING_50HZ }, // Gibraltar
-    { 268, CAMERA_ANTIBANDING_50HZ }, // Portugal
-    { 270, CAMERA_ANTIBANDING_50HZ }, // Luxembourg
-    { 272, CAMERA_ANTIBANDING_50HZ }, // Ireland
-    { 274, CAMERA_ANTIBANDING_50HZ }, // Iceland
-    { 276, CAMERA_ANTIBANDING_50HZ }, // Albania
-    { 278, CAMERA_ANTIBANDING_50HZ }, // Malta
-    { 280, CAMERA_ANTIBANDING_50HZ }, // Cyprus
-    { 282, CAMERA_ANTIBANDING_50HZ }, // Georgia
-    { 283, CAMERA_ANTIBANDING_50HZ }, // Armenia
-    { 284, CAMERA_ANTIBANDING_50HZ }, // Bulgaria
-    { 286, CAMERA_ANTIBANDING_50HZ }, // Turkey
-    { 288, CAMERA_ANTIBANDING_50HZ }, // Faroe Islands
-    { 290, CAMERA_ANTIBANDING_50HZ }, // Greenland
-    { 293, CAMERA_ANTIBANDING_50HZ }, // Slovenia
-    { 294, CAMERA_ANTIBANDING_50HZ }, // Macedonia
-    { 295, CAMERA_ANTIBANDING_50HZ }, // Liechtenstein
-    { 297, CAMERA_ANTIBANDING_50HZ }, // Montenegro
-    { 302, CAMERA_ANTIBANDING_60HZ }, // Canada
-    { 310, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 311, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 312, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 313, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 314, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 315, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 316, CAMERA_ANTIBANDING_60HZ }, // United States of America
-    { 330, CAMERA_ANTIBANDING_60HZ }, // Puerto Rico
-    { 334, CAMERA_ANTIBANDING_60HZ }, // Mexico
-    { 338, CAMERA_ANTIBANDING_50HZ }, // Jamaica
-    { 340, CAMERA_ANTIBANDING_50HZ }, // Martinique
-    { 342, CAMERA_ANTIBANDING_50HZ }, // Barbados
-    { 346, CAMERA_ANTIBANDING_60HZ }, // Cayman Islands
-    { 350, CAMERA_ANTIBANDING_60HZ }, // Bermuda
-    { 352, CAMERA_ANTIBANDING_50HZ }, // Grenada
-    { 354, CAMERA_ANTIBANDING_60HZ }, // Montserrat
-    { 362, CAMERA_ANTIBANDING_50HZ }, // Netherlands Antilles
-    { 363, CAMERA_ANTIBANDING_60HZ }, // Aruba
-    { 364, CAMERA_ANTIBANDING_60HZ }, // Bahamas
-    { 365, CAMERA_ANTIBANDING_60HZ }, // Anguilla
-    { 366, CAMERA_ANTIBANDING_50HZ }, // Dominica
-    { 368, CAMERA_ANTIBANDING_60HZ }, // Cuba
-    { 370, CAMERA_ANTIBANDING_60HZ }, // Dominican Republic
-    { 372, CAMERA_ANTIBANDING_60HZ }, // Haiti
-    { 401, CAMERA_ANTIBANDING_50HZ }, // Kazakhstan
-    { 402, CAMERA_ANTIBANDING_50HZ }, // Bhutan
-    { 404, CAMERA_ANTIBANDING_50HZ }, // India
-    { 405, CAMERA_ANTIBANDING_50HZ }, // India
-    { 410, CAMERA_ANTIBANDING_50HZ }, // Pakistan
-    { 413, CAMERA_ANTIBANDING_50HZ }, // Sri Lanka
-    { 414, CAMERA_ANTIBANDING_50HZ }, // Myanmar
-    { 415, CAMERA_ANTIBANDING_50HZ }, // Lebanon
-    { 416, CAMERA_ANTIBANDING_50HZ }, // Jordan
-    { 417, CAMERA_ANTIBANDING_50HZ }, // Syria
-    { 418, CAMERA_ANTIBANDING_50HZ }, // Iraq
-    { 419, CAMERA_ANTIBANDING_50HZ }, // Kuwait
-    { 420, CAMERA_ANTIBANDING_60HZ }, // Saudi Arabia
-    { 421, CAMERA_ANTIBANDING_50HZ }, // Yemen
-    { 422, CAMERA_ANTIBANDING_50HZ }, // Oman
-    { 424, CAMERA_ANTIBANDING_50HZ }, // United Arab Emirates
-    { 425, CAMERA_ANTIBANDING_50HZ }, // Israel
-    { 426, CAMERA_ANTIBANDING_50HZ }, // Bahrain
-    { 427, CAMERA_ANTIBANDING_50HZ }, // Qatar
-    { 428, CAMERA_ANTIBANDING_50HZ }, // Mongolia
-    { 429, CAMERA_ANTIBANDING_50HZ }, // Nepal
-    { 430, CAMERA_ANTIBANDING_50HZ }, // United Arab Emirates
-    { 431, CAMERA_ANTIBANDING_50HZ }, // United Arab Emirates
-    { 432, CAMERA_ANTIBANDING_50HZ }, // Iran
-    { 434, CAMERA_ANTIBANDING_50HZ }, // Uzbekistan
-    { 436, CAMERA_ANTIBANDING_50HZ }, // Tajikistan
-    { 437, CAMERA_ANTIBANDING_50HZ }, // Kyrgyz Rep
-    { 438, CAMERA_ANTIBANDING_50HZ }, // Turkmenistan
-    { 440, CAMERA_ANTIBANDING_60HZ }, // Japan
-    { 441, CAMERA_ANTIBANDING_60HZ }, // Japan
-    { 452, CAMERA_ANTIBANDING_50HZ }, // Vietnam
-    { 454, CAMERA_ANTIBANDING_50HZ }, // Hong Kong
-    { 455, CAMERA_ANTIBANDING_50HZ }, // Macao
-    { 456, CAMERA_ANTIBANDING_50HZ }, // Cambodia
-    { 457, CAMERA_ANTIBANDING_50HZ }, // Laos
-    { 460, CAMERA_ANTIBANDING_50HZ }, // China
-    { 466, CAMERA_ANTIBANDING_60HZ }, // Taiwan
-    { 470, CAMERA_ANTIBANDING_50HZ }, // Bangladesh
-    { 472, CAMERA_ANTIBANDING_50HZ }, // Maldives
-    { 502, CAMERA_ANTIBANDING_50HZ }, // Malaysia
-    { 505, CAMERA_ANTIBANDING_50HZ }, // Australia
-    { 510, CAMERA_ANTIBANDING_50HZ }, // Indonesia
-    { 514, CAMERA_ANTIBANDING_50HZ }, // East Timor
-    { 515, CAMERA_ANTIBANDING_60HZ }, // Philippines
-    { 520, CAMERA_ANTIBANDING_50HZ }, // Thailand
-    { 525, CAMERA_ANTIBANDING_50HZ }, // Singapore
-    { 530, CAMERA_ANTIBANDING_50HZ }, // New Zealand
-    { 535, CAMERA_ANTIBANDING_60HZ }, // Guam
-    { 536, CAMERA_ANTIBANDING_50HZ }, // Nauru
-    { 537, CAMERA_ANTIBANDING_50HZ }, // Papua New Guinea
-    { 539, CAMERA_ANTIBANDING_50HZ }, // Tonga
-    { 541, CAMERA_ANTIBANDING_50HZ }, // Vanuatu
-    { 542, CAMERA_ANTIBANDING_50HZ }, // Fiji
-    { 544, CAMERA_ANTIBANDING_60HZ }, // American Samoa
-    { 545, CAMERA_ANTIBANDING_50HZ }, // Kiribati
-    { 546, CAMERA_ANTIBANDING_50HZ }, // New Caledonia
-    { 548, CAMERA_ANTIBANDING_50HZ }, // Cook Islands
-    { 602, CAMERA_ANTIBANDING_50HZ }, // Egypt
-    { 603, CAMERA_ANTIBANDING_50HZ }, // Algeria
-    { 604, CAMERA_ANTIBANDING_50HZ }, // Morocco
-    { 605, CAMERA_ANTIBANDING_50HZ }, // Tunisia
-    { 606, CAMERA_ANTIBANDING_50HZ }, // Libya
-    { 607, CAMERA_ANTIBANDING_50HZ }, // Gambia
-    { 608, CAMERA_ANTIBANDING_50HZ }, // Senegal
-    { 609, CAMERA_ANTIBANDING_50HZ }, // Mauritania
-    { 610, CAMERA_ANTIBANDING_50HZ }, // Mali
-    { 611, CAMERA_ANTIBANDING_50HZ }, // Guinea
-    { 613, CAMERA_ANTIBANDING_50HZ }, // Burkina Faso
-    { 614, CAMERA_ANTIBANDING_50HZ }, // Niger
-    { 616, CAMERA_ANTIBANDING_50HZ }, // Benin
-    { 617, CAMERA_ANTIBANDING_50HZ }, // Mauritius
-    { 618, CAMERA_ANTIBANDING_50HZ }, // Liberia
-    { 619, CAMERA_ANTIBANDING_50HZ }, // Sierra Leone
-    { 620, CAMERA_ANTIBANDING_50HZ }, // Ghana
-    { 621, CAMERA_ANTIBANDING_50HZ }, // Nigeria
-    { 622, CAMERA_ANTIBANDING_50HZ }, // Chad
-    { 623, CAMERA_ANTIBANDING_50HZ }, // Central African Republic
-    { 624, CAMERA_ANTIBANDING_50HZ }, // Cameroon
-    { 625, CAMERA_ANTIBANDING_50HZ }, // Cape Verde
-    { 627, CAMERA_ANTIBANDING_50HZ }, // Equatorial Guinea
-    { 631, CAMERA_ANTIBANDING_50HZ }, // Angola
-    { 633, CAMERA_ANTIBANDING_50HZ }, // Seychelles
-    { 634, CAMERA_ANTIBANDING_50HZ }, // Sudan
-    { 636, CAMERA_ANTIBANDING_50HZ }, // Ethiopia
-    { 637, CAMERA_ANTIBANDING_50HZ }, // Somalia
-    { 638, CAMERA_ANTIBANDING_50HZ }, // Djibouti
-    { 639, CAMERA_ANTIBANDING_50HZ }, // Kenya
-    { 640, CAMERA_ANTIBANDING_50HZ }, // Tanzania
-    { 641, CAMERA_ANTIBANDING_50HZ }, // Uganda
-    { 642, CAMERA_ANTIBANDING_50HZ }, // Burundi
-    { 643, CAMERA_ANTIBANDING_50HZ }, // Mozambique
-    { 645, CAMERA_ANTIBANDING_50HZ }, // Zambia
-    { 646, CAMERA_ANTIBANDING_50HZ }, // Madagascar
-    { 647, CAMERA_ANTIBANDING_50HZ }, // France
-    { 648, CAMERA_ANTIBANDING_50HZ }, // Zimbabwe
-    { 649, CAMERA_ANTIBANDING_50HZ }, // Namibia
-    { 650, CAMERA_ANTIBANDING_50HZ }, // Malawi
-    { 651, CAMERA_ANTIBANDING_50HZ }, // Lesotho
-    { 652, CAMERA_ANTIBANDING_50HZ }, // Botswana
-    { 653, CAMERA_ANTIBANDING_50HZ }, // Swaziland
-    { 654, CAMERA_ANTIBANDING_50HZ }, // Comoros
-    { 655, CAMERA_ANTIBANDING_50HZ }, // South Africa
-    { 657, CAMERA_ANTIBANDING_50HZ }, // Eritrea
-    { 702, CAMERA_ANTIBANDING_60HZ }, // Belize
-    { 704, CAMERA_ANTIBANDING_60HZ }, // Guatemala
-    { 706, CAMERA_ANTIBANDING_60HZ }, // El Salvador
-    { 708, CAMERA_ANTIBANDING_60HZ }, // Honduras
-    { 710, CAMERA_ANTIBANDING_60HZ }, // Nicaragua
-    { 712, CAMERA_ANTIBANDING_60HZ }, // Costa Rica
-    { 714, CAMERA_ANTIBANDING_60HZ }, // Panama
-    { 722, CAMERA_ANTIBANDING_50HZ }, // Argentina
-    { 724, CAMERA_ANTIBANDING_60HZ }, // Brazil
-    { 730, CAMERA_ANTIBANDING_50HZ }, // Chile
-    { 732, CAMERA_ANTIBANDING_60HZ }, // Colombia
-    { 734, CAMERA_ANTIBANDING_60HZ }, // Venezuela
-    { 736, CAMERA_ANTIBANDING_50HZ }, // Bolivia
-    { 738, CAMERA_ANTIBANDING_60HZ }, // Guyana
-    { 740, CAMERA_ANTIBANDING_60HZ }, // Ecuador
-    { 742, CAMERA_ANTIBANDING_50HZ }, // French Guiana
-    { 744, CAMERA_ANTIBANDING_50HZ }, // Paraguay
-    { 746, CAMERA_ANTIBANDING_60HZ }, // Suriname
-    { 748, CAMERA_ANTIBANDING_50HZ }, // Uruguay
-    { 750, CAMERA_ANTIBANDING_50HZ }, // Falkland Islands
-};
-#define country_number (sizeof(country_numeric) / sizeof(country_map))
-/* Look up pre-sorted antibanding_type table by current MCC. */
-static camera_antibanding_type camera_get_location(void) {
-    char value[PROP_VALUE_MAX];
-    char country_value[PROP_VALUE_MAX];
-    uint32_t country_code;
-    memset(value, 0x00, sizeof(value));
-    memset(country_value, 0x00, sizeof(country_value));
-    if (!__system_property_get("gsm.operator.numeric", value)) {
-        return CAMERA_ANTIBANDING_60HZ;
-    }
-    memcpy(country_value, value, 3);
-    country_code = atoi(country_value);
-    ALOGD("value:%s, country value:%s, country code:%d\n",
-            value, country_value, country_code);
-    int left = 0;
-    int right = country_number - 1;
-    while (left <= right) {
-        int index = (left + right) >> 1;
-        if (country_numeric[index].country_code == country_code)
-            return country_numeric[index].type;
-        else if (country_numeric[index].country_code > country_code)
-            right = index - 1;
-        else
-            left = index + 1;
-    }
-    return CAMERA_ANTIBANDING_60HZ;
-}
-#endif
 
 static const str_map scenemode[] = {
     { CameraParameters::SCENE_MODE_AUTO,           CAMERA_BESTSHOT_OFF },
@@ -682,7 +383,6 @@ static const str_map scenedetect[] = {
     { CameraParameters::SCENE_DETECT_ON, TRUE },
 };
 
-// from camera.h, led_mode_t
 static const str_map flash[] = {
     { CameraParameters::FLASH_MODE_OFF,  LED_MODE_OFF },
     { CameraParameters::FLASH_MODE_AUTO, LED_MODE_AUTO },
@@ -690,7 +390,6 @@ static const str_map flash[] = {
     { CameraParameters::FLASH_MODE_TORCH, LED_MODE_TORCH}
 };
 
-// from mm-camera/common/camera.h.
 static const str_map iso[] = {
     { CameraParameters::ISO_AUTO,  CAMERA_ISO_AUTO},
     { CameraParameters::ISO_HJR,   CAMERA_ISO_DEBLUR},
@@ -786,17 +485,11 @@ static const str_map zsl_modes[] = {
     //{ CameraParameters::ZSL_ON, TRUE },
 };
 
-/*
- * Values based on aec.c
- */
 #define DONT_CARE_COORDINATE -1
 #define CAMERA_HISTOGRAM_ENABLE 1
 #define CAMERA_HISTOGRAM_DISABLE 0
 #define HISTOGRAM_STATS_SIZE 257
 
-/*
- * Values based on aec.c
- */
 #define EXPOSURE_COMPENSATION_MAXIMUM_NUMERATOR 12
 #define EXPOSURE_COMPENSATION_MINIMUM_NUMERATOR -12
 #define EXPOSURE_COMPENSATION_DEFAULT_NUMERATOR 0
@@ -826,7 +519,7 @@ static int mPreviewFormat;
 static const str_map preview_formats[] = {
         {CameraParameters::PIXEL_FORMAT_YUV420SP,   CAMERA_YUV_420_NV21},
         {CameraParameters::PIXEL_FORMAT_YUV420SP_ADRENO, CAMERA_YUV_420_NV21_ADRENO},
-        //{CameraParameters::PIXEL_FORMAT_YV12, CAMERA_YUV_420_YV12}
+//      {CameraParameters::PIXEL_FORMAT_YV12, CAMERA_YUV_420_YV12}
 };
 static const str_map preview_formats1[] = {
         {CameraParameters::PIXEL_FORMAT_YUV420SP,   CAMERA_YUV_420_NV21},
@@ -1296,24 +989,6 @@ static int dstOffset = 0;
 
 static int16_t * zoomRatios;
 
-
-/* When using MDP zoom, double the preview buffers. The usage of these
- * buffers is as follows:
- * 1. As all the buffers comes under a single FD, and at initial registration,
- * this FD will be passed to surface flinger, surface flinger can have access
- * to all the buffers when needed.
- * 2. Only "kPreviewBufferCount" buffers (SrcSet) will be registered with the
- * camera driver to receive preview frames. The remaining buffers (DstSet),
- * will be used at HAL and by surface flinger only when crop information
- * is present in the frame.
- * 3. When there is no crop information, there will be no call to MDP zoom,
- * and the buffers in SrcSet will be passed to surface flinger to display.
- * 4. With crop information present, MDP zoom will be called, and the final
- * data will be placed in a buffer from DstSet, and this buffer will be given
- * to surface flinger to display.
- */
-#define NUM_MORE_BUFS 2
-
 QualcommCameraHardware::QualcommCameraHardware()
     : mParameters(),
       mCameraRunning(false),
@@ -1330,7 +1005,6 @@ QualcommCameraHardware::QualcommCameraHardware()
       mEncodePending(false),
       mBuffersInitialized(false),
       mSnapshotFormat(0),
-      mFirstFrame(true),
       mStoreMetaDataInFrame(0),
       mReleasedRecordingFrame(false),
       mPreviewFrameSize(0),
@@ -1342,17 +1016,13 @@ QualcommCameraHardware::QualcommCameraHardware()
       mBrightness(0),
       mSkinToneEnhancement(0),
       mHJR(0),
-      mInPreviewCallback(false),
-      //mUseOverlay(0),
       mPreviewWindow(NULL),
       mIs3DModeOn(0),
-      //mOverlay(0),
       mMsgEnabled(0),
       mNotifyCallback(0),
       mDataCallback(0),
       mDataCallbackTimestamp(0),
       mCallbackCookie(0),
-      mDebugFps(0),
       mSnapshotDone(0),
       maxSnapshotWidth(0),
       maxSnapshotHeight(0),
@@ -1427,11 +1097,8 @@ QualcommCameraHardware::QualcommCameraHardware()
         ALOGE(" openCamera thread creation failed ");
     }
     memset(&mDimension, 0, sizeof(mDimension));
-    memset(&mCrop, 0, sizeof(mCrop));
     memset(&zoomCropInfo, 0, sizeof(android_native_rect_t));
-    //storeTargetType();
-    property_get("persist.debug.sf.showfps", value, "0");
-    mDebugFps = atoi(value);
+
     if( mCurrentTarget == TARGET_MSM7630 || mCurrentTarget == TARGET_MSM8660 ) {
         kPreviewBufferCountActual = kPreviewBufferCount;
         kRecordBufferCount = RECORD_BUFFERS;
@@ -1439,7 +1106,7 @@ QualcommCameraHardware::QualcommCameraHardware()
         record_buffers_tracking_flag = new bool[kRecordBufferCount];
     }
     else {
-        kPreviewBufferCountActual = kPreviewBufferCount + NUM_MORE_BUFS;
+        kPreviewBufferCountActual = kPreviewBufferCount;
         if( mCurrentTarget == TARGET_QSD8250 ) {
             kRecordBufferCount = RECORD_BUFFERS_8x50;
             recordframes = new msm_frame[kRecordBufferCount];
@@ -1455,20 +1122,6 @@ QualcommCameraHardware::QualcommCameraHardware()
     else {
         for (int i = 0; i < kRecordBufferCount; i++)
           metadata_memory[i] = NULL;
-    }
-    switch(mCurrentTarget){
-        case TARGET_MSM7627:
-        case TARGET_MSM7627A:
-            jpegPadding = 0; // to be checked.
-            break;
-        case TARGET_QSD8250:
-        case TARGET_MSM7630:
-        case TARGET_MSM8660:
-            jpegPadding = 0;
-            break;
-        default:
-            jpegPadding = 0;
-            break;
     }
     // Initialize with default format values. The format values can be
     // overriden when application requests.
@@ -1708,6 +1361,7 @@ void QualcommCameraHardware::initDefaultParameters()
        if(mCfgControl.mm_camera_query_parms(CAMERA_PARM_ZOOM_RATIO,
            (void **)&zoomRatios, (uint32_t *) &mMaxZoom) == MM_CAMERA_SUCCESS) {
             zoomSupported = true;
+            mMaxZoom = (mMaxZoom + 1) / 2;
             if( mMaxZoom >0) {
                 ALOGE("Maximum zoom value is %d", mMaxZoom);
                 if(zoomRatios != NULL) {
@@ -1779,13 +1433,13 @@ void QualcommCameraHardware::initDefaultParameters()
     } else{
       mParameters.setPictureSize(DEFAULT_PICTURE_WIDTH, DEFAULT_PICTURE_HEIGHT);
     }
-    mParameters.setPictureFormat("jpeg"); // informative
+    mParameters.setPictureFormat(CameraParameters::PIXEL_FORMAT_JPEG); // informative
 
-    mParameters.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, "yuv420sp");
+    mParameters.set(CameraParameters::KEY_VIDEO_FRAME_FORMAT, CameraParameters::PIXEL_FORMAT_YUV420SP);
 
     mParameters.set(CameraParameters::KEY_JPEG_QUALITY, "85"); // max quality
 
-    mParameters.set("power-mode-supported", "false");
+    mParameters.set(CameraParameters::KEY_POWER_MODE_SUPPORTED, "false");
 
     mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH,
                     THUMBNAIL_WIDTH_STR); // informative
@@ -1813,7 +1467,7 @@ void QualcommCameraHardware::initDefaultParameters()
          * of zoom table. So the actual max zoom value will be one
          * less than that value.
          */
-        mParameters.set("max-zoom",mMaxZoom-1);
+        mParameters.set(CameraParameters::KEY_MAX_ZOOM,mMaxZoom-1);
         mParameters.set(CameraParameters::KEY_ZOOM_RATIOS,
                             zoom_ratio_values);
     } else {
@@ -2718,26 +2372,8 @@ void QualcommCameraHardware::runFrameThread(void *data)
     }
     if(!mZslEnable) {
     if(( mCurrentTarget == TARGET_MSM7630 ) || (mCurrentTarget == TARGET_QSD8250) || (mCurrentTarget == TARGET_MSM8660)){
-        if(mHFRMode != true) {
-        } else {
-            ALOGI("%s: unregister record buffers with camera driver", __FUNCTION__);
-            register_record_buffers(false);
-        }
         int CbCrOffset = PAD_TO_2K(mDimension.video_width  * mDimension.video_height);
 	    for (int cnt = 0; cnt < kRecordBufferCount; cnt++) {
-#if 0
-	if (mRecordfd[cnt] > 0) {
-	    ALOGE("Unregistering buffer %d with kernel",cnt);
-	    register_buf(mRecordFrameSize,
-		mRecordFrameSize, CbCrOffset, 0,
-		mRecordfd[cnt],
-		0,
-		(uint8_t *)recordframes[cnt].buffer,
-		MSM_PMEM_VIDEO,
-		false, false);
-	    ALOGE("Came back from register call to kernel");
-	  }
-#endif
              type = MSM_PMEM_VIDEO;
              ALOGE("%s: unregister record buffers[%d] with camera driver", __FUNCTION__, cnt);
              if(recordframes) {
@@ -2788,9 +2424,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
     int bufferIndex = 0;
 
     while((frame = mPreviewBusyQueue.get()) != NULL) {
-        if (UNLIKELY(mDebugFps)) {
-            debugShowPreviewFPS();
-        }
         mCallbackLock.lock();
         int msgEnabled = mMsgEnabled;
         camera_data_callback pcb = mDataCallback;
@@ -2834,7 +2467,6 @@ void QualcommCameraHardware::runPreviewThread(void *data)
               }
               frameCnt++;
 #endif
-        mInPreviewCallback = true;
          if (crop->in1_w != 0 && crop->in1_h != 0) {
              zoomCropInfo.left = (crop->out1_w - crop->in1_w + 1) / 2 - 1;
              zoomCropInfo.top = (crop->out1_h - crop->in1_h + 1) / 2 - 1;
@@ -3226,36 +2858,10 @@ void QualcommCameraHardware::runVideoThread(void *data)
         pthread_mutex_unlock(&(g_busy_frame_queue.mut));
         ALOGE("in video_thread : got video frame %p",vframe);
 
-        /*if (UNLIKELY(mDebugFps)) {
-            debugShowVideoFPS();
-        }*/
-
         if(vframe != NULL) {
             /* Extract the timestamp of this frame */
             nsecs_t timeStamp = nsecs_t(vframe->ts.tv_sec)*1000000000LL + vframe->ts.tv_nsec;
 
-            // dump frames for test purpose
-#if 0
-            static int frameCnt = 0;
-            if (frameCnt >= 11 && frameCnt <= 13 ) {
-                char buf[128];
-                sprintf(buf,  "/data/%d_v.yuv", frameCnt);
-                int file_fd = open(buf, O_RDWR | O_CREAT, 0777);
-                ALOGV("dumping video frame %d", frameCnt);
-                if (file_fd < 0) {
-                    ALOGE("cannot open file\n");
-                }
-                else
-                {
-                    write(file_fd, (const void *)vframe->buffer,
-                        vframe->cbcr_off * 3 / 2);
-                }
-                close(file_fd);
-          }
-          frameCnt++;
-#endif
-            // Enable IF block to give frames to encoder , ELSE block for just simulation
-#if 1
             ALOGV("in video_thread : got video frame, before if check giving frame to services/encoder");
             mCallbackLock.lock();
             int msgEnabled = mMsgEnabled;
@@ -3281,12 +2887,6 @@ void QualcommCameraHardware::runVideoThread(void *data)
                     }
                 }
             }
-#else
-            // 720p output2  : simulate release frame here:
-            ALOGE("in video_thread simulation , releasing the video frame");
-            LINK_camframe_add_frame(CAM_VIDEO_FRAME,vframe);
-#endif
-
         } else ALOGE("in video_thread get frame returned null");
 
 
@@ -3346,6 +2946,7 @@ static int parse_size(const char *str, int &width, int &height)
 }
 QualcommCameraHardware* hardware;
 
+#ifdef USE_ION
 int QualcommCameraHardware::allocate_ion_memory(int *main_ion_fd, struct ion_allocation_data* alloc,
      struct ion_fd_data* ion_info_fd, int ion_type, int size, int *memfd)
 {
@@ -3398,6 +2999,7 @@ int QualcommCameraHardware::deallocate_ion_memory(int *main_ion_fd, struct ion_f
     close(*main_ion_fd);
     return rc;
 }
+#endif
 
 bool QualcommCameraHardware::initPreview()
 {
@@ -3597,7 +3199,6 @@ ALOGE("%s Got preview dimension as %d x %d ", __func__, previewWidth, previewHei
         mFrameThreadWaitLock.unlock();
         LINK_wait_cam_frame_thread_ready();
     }
-    mFirstFrame = true;
 
     ALOGV("initPreview X: %d", ret);
     return ret;
@@ -3922,8 +3523,8 @@ bool QualcommCameraHardware::createSnapshotMemory (int numberOfRawBuffers, int n
 }
 bool QualcommCameraHardware::initRaw(bool initJpegHeap)
 {
-    const char * pmem_region;
-    int ion_heap;
+    const char *pmem_region = "/dev/pmem_adsp";
+    int ion_heap = ION_CAMERA_HEAP_ID;
     int postViewBufferSize;
     uint32_t pictureAspectRatio;
     uint32_t i;
@@ -4076,9 +3677,6 @@ bool QualcommCameraHardware::initRaw(bool initJpegHeap)
 
     ALOGV("initRaw: initializing mRawHeap.");
 
-    //PostView
-    pmem_region = "/dev/pmem_adsp";
-    ion_heap = ION_CAMERA_HEAP_ID;
     // Create memory for Raw YUV frames and Jpeg images
     if( createSnapshotMemory(numCapture, numCapture, initJpegHeap) == false )
     {
@@ -4465,15 +4063,6 @@ void QualcommCameraHardware::release()
 {
     ALOGI("release E");
     Mutex::Autolock l(&mLock);
-#if 0
-    {
-        Mutex::Autolock checkLock(&singleton_lock);
-        if(singleton_releasing){
-            ALOGE("ERROR: multiple release!");
-            return;
-        }
-    }
-#endif
     ALOGI("release: mCameraRunning = %d", mCameraRunning);
     if (mCameraRunning) {
         if(mDataCallbackTimestamp && (mMsgEnabled & CAMERA_MSG_VIDEO_FRAME)) {
@@ -4649,9 +4238,6 @@ status_t QualcommCameraHardware::startPreviewInternal()
         LINK_camframe_release_all_frames(CAM_VIDEO_FRAME);
         LINK_camframe_release_all_frames(CAM_PREVIEW_FRAME);
         mPreviewInitialized = false;
-        mOverlayLock.lock();
-        //mOverlay = NULL;
-        mOverlayLock.unlock();
         ALOGE("startPreview X: native_start_ops: CAMERA_OPS_STREAMING_PREVIEW ioctl failed!");
         return UNKNOWN_ERROR;
     }
@@ -4665,7 +4251,7 @@ status_t QualcommCameraHardware::startPreviewInternal()
     return NO_ERROR;
 }
 status_t QualcommCameraHardware::startInitialPreview() {
-   mCameraRunning = DUMMY_CAMERA_STARTED;
+   mCameraRunning = true;
    return NO_ERROR;
 }
 status_t QualcommCameraHardware::startPreview()
@@ -4692,7 +4278,7 @@ status_t QualcommCameraHardware::startPreview()
 }
 
 void QualcommCameraHardware::stopInitialPreview() {
-   mCameraRunning = 0;//!native_stop_ops(CAMERA_OPS_STREAMING_VIDEO, NULL);
+   mCameraRunning = false;//!native_stop_ops(CAMERA_OPS_STREAMING_VIDEO, NULL);
 }
 
 void QualcommCameraHardware::stopPreviewInternal()
@@ -4762,7 +4348,7 @@ void QualcommCameraHardware::stopPreviewInternal()
                  * need to update mCameraRunning to indicate that
                  * Camera is no longer running. */
                 ALOGE("%s, : MAKE MCAMER_RUNNING FALSE!!!",__FUNCTION__);
-                mCameraRunning = 0;
+                mCameraRunning = false;
             }
         }
     }
@@ -5214,15 +4800,6 @@ status_t QualcommCameraHardware::takePicture()
 
     if(!mZslEnable || mZslFlashEnable)
         stopPreviewInternal();
-#if 0
-    else if(mZslEnable && !mZslPanorama) {
-        /* Dont stop preview if ZSL Panorama is enabled for
-         * Continuous viewfinder support*/
-        ALOGE("Calling stop preview");
-        mCamOps.mm_camera_stop(CAMERA_OPS_ZSL_STREAMING_CB,NULL, NULL);
-    }
-#endif
-
 
     mFrameThreadWaitLock.unlock();
 
@@ -5532,20 +5109,6 @@ status_t QualcommCameraHardware::setHistogramOff()
 
 status_t QualcommCameraHardware::runFaceDetection()
 {
-    bool ret = true;
-#if 0
-    const char *str = mParameters.get(CameraParameters::KEY_FACE_DETECTION);
-    if (str != NULL) {
-        int value = attr_lookup(facedetection,
-                sizeof(facedetection) / sizeof(str_map), str);
-
-        mMetaDataWaitLock.lock();
-        mMetaDataWaitLock.unlock();
-        ret = native_set_parms(CAMERA_PARM_FD, sizeof(int8_t), (void *)&value);
-        return ret ? NO_ERROR : UNKNOWN_ERROR;
-    }
-    ALOGE("Invalid Face Detection value: %s", (str == NULL) ? "NULL" : str);
- #endif
 	return BAD_VALUE;
 }
 
@@ -5587,57 +5150,6 @@ status_t QualcommCameraHardware::sendCommand(int32_t command, int32_t arg1,
                                    return NO_ERROR;
       case CAMERA_CMD_ENABLE_FOCUS_MOVE_MSG: /* Stub this for now. */
                                    return NO_ERROR;
-#if 0
-      case CAMERA_CMD_FACE_DETECTION_ON:
-                                   if(supportsFaceDetection() == false){
-                                        ALOGI("face detection support is not available");
-                                        return NO_ERROR;
-                                   }
-
-                                   setFaceDetection("on");
-                                   return runFaceDetection();
-      case CAMERA_CMD_FACE_DETECTION_OFF:
-                                   if(supportsFaceDetection() == false){
-                                        ALOGI("face detection support is not available");
-                                        return NO_ERROR;
-                                   }
-                                   setFaceDetection("off");
-                                   return runFaceDetection();
-      case CAMERA_CMD_SEND_META_DATA:
-                                   mMetaDataWaitLock.lock();
-                                   if(mFaceDetectOn == true) {
-                                       mSendMetaData = true;
-                                   }
-                                   mMetaDataWaitLock.unlock();
-                                   return NO_ERROR;
-      case CAMERA_CMD_START_SMOOTH_ZOOM :
-             ALOGV("HAL sendcmd start smooth zoom %d %d", arg1 , arg2);
-             mTargetSmoothZoom = arg1;
-             if(!mPreviewStopping) {
-                 // create smooth zoom thread
-                 mSmoothzoomThreadLock.lock();
-                 mSmoothzoomThreadExit = false;
-                 pthread_attr_t attr;
-                 pthread_attr_init(&attr);
-                 pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-                 pthread_create(&mSmoothzoomThread,
-                                    &attr,
-                                    smoothzoom_thread,
-                                    NULL);
-                 mSmoothzoomThreadLock.unlock();
-             } else
-                 ALOGV(" Not creating smooth zoom thread "
-                      " since preview is stopping ");
-             mTargetSmoothZoom = arg1;
-             return NO_ERROR;
-
-      case CAMERA_CMD_STOP_SMOOTH_ZOOM :
-             mSmoothzoomThreadLock.lock();
-             mSmoothzoomThreadExit = true;
-             mSmoothzoomThreadLock.unlock();
-             ALOGV("HAL sendcmd stop smooth zoom");
-             return NO_ERROR;
-#endif
    }
    return BAD_VALUE;
 }
@@ -5681,7 +5193,7 @@ void QualcommCameraHardware::runSmoothzoomThread(void * data) {
             break;
         }
         // update zoom
-        p.set("zoom", i);
+        p.set(CameraParameters::KEY_ZOOM, i);
         setZoom(p);
         if(!mPreviewStopping) {
             // give call back to zoom listener in app
@@ -5718,25 +5230,8 @@ extern "C" QualcommCameraHardware* HAL_openCameraHardware(int cameraId)
             ALOGI("openCameraHardware:Valid camera ID %d", cameraId);
             parameter_string_initialized = false;
             HAL_currentCameraId = cameraId;
-            /* The least significant two bits of mode parameter indicates the sensor mode
-               of 2D or 3D. The next two bits indicates the snapshot mode of
-               ZSL or NONZSL
-               */
-#if 0
-            int sensorModeMask = 0x03 & mode;
-            if(sensorModeMask & HAL_cameraInfo[i].modes_supported){
-                HAL_currentCameraMode = sensorModeMask;
-            }else{
-                ALOGE("openCameraHardware:Invalid camera mode (%d) requested", mode);
-                return NULL;
-            }
-#endif
             HAL_currentCameraMode = CAMERA_MODE_2D;
             HAL_currentSnapshotMode = CAMERA_SNAPSHOT_NONZSL;
-            //Remove values set by app other than  supported values
-            //mode = mode & HAL_cameraInfo[cameraId].modes_supported;
-            //if((mode & CAMERA_SNAPSHOT_ZSL) == CAMERA_SNAPSHOT_ZSL)
-              //  HAL_currentSnapshotMode = CAMERA_SNAPSHOT_ZSL;
             ALOGI("%s: HAL_currentSnapshotMode = %d HAL_currentCameraMode = %d", __FUNCTION__, HAL_currentSnapshotMode,
                  HAL_currentCameraMode);
             return QualcommCameraHardware::createInstance();
@@ -5754,42 +5249,6 @@ extern "C" QualcommCameraHardware* HAL_openCameraHardware(int cameraId)
 QualcommCameraHardware* QualcommCameraHardware::createInstance()
 {
     ALOGI("createInstance: E");
-#if 0
-    singleton_lock.lock();
-
-    // Wait until the previous release is done.
-    while (singleton_releasing) {
-        if((singleton_releasing_start_time != 0) &&
-                (systemTime() - singleton_releasing_start_time) > SINGLETON_RELEASING_WAIT_TIME){
-            ALOGV("in createinstance system time is %lld %lld %lld ",
-                    systemTime(), singleton_releasing_start_time, SINGLETON_RELEASING_WAIT_TIME);
-            singleton_lock.unlock();
-            ALOGE("Previous singleton is busy and time out exceeded. Returning null");
-            return NULL;
-        }
-        ALOGI("Wait for previous release.");
-        singleton_wait.waitRelative(singleton_lock, SINGLETON_RELEASING_RECHECK_TIMEOUT);
-        ALOGI("out of Wait for previous release.");
-    }
-
-    if (singleton != 0) {
-        sp<CameraHardwareInterface> hardware = singleton.promote();
-        if (hardware != 0) {
-            ALOGD("createInstance: X return existing hardware=%p", &(*hardware));
-            singleton_lock.unlock();
-            return hardware;
-        }
-    }
-#endif
-    {
-        struct stat st;
-        int rc = stat("/dev/oncrpc", &st);
-        if (rc < 0) {
-            ALOGD("createInstance: X failed to create hardware: %s", strerror(errno));
-            singleton_lock.unlock();
-            return NULL;
-        }
-    }
 
     QualcommCameraHardware *cam = new QualcommCameraHardware();
     hardware=cam;
@@ -5798,13 +5257,11 @@ QualcommCameraHardware* QualcommCameraHardware::createInstance()
     ALOGI("createInstance: created hardware=%p", cam);
     if (!cam->startCamera()) {
         ALOGE("%s: startCamera failed!", __FUNCTION__);
-        //singleton_lock.unlock();
         delete cam;
         return NULL;
     }
 
     cam->initDefaultParameters();
-    //singleton_lock.unlock();
     ALOGI("createInstance: X");
     return cam;
 }
@@ -5834,55 +5291,9 @@ void QualcommCameraHardware::receiveRecordingFrame(struct msm_frame *frame)
     ALOGV("receiveRecordingFrame X");
 }
 
-void QualcommCameraHardware::debugShowPreviewFPS() const
-{
-    static int mFrameCount;
-    static int mLastFrameCount = 0;
-    static nsecs_t mLastFpsTime = 0;
-    static float mFps = 0;
-    mFrameCount++;
-    nsecs_t now = systemTime();
-    nsecs_t diff = now - mLastFpsTime;
-    if (diff > ms2ns(250)) {
-        mFps =  ((mFrameCount - mLastFrameCount) * float(s2ns(1))) / diff;
-        ALOGI("Preview Frames Per Second: %.4f", mFps);
-        mLastFpsTime = now;
-        mLastFrameCount = mFrameCount;
-    }
-}
-
-void QualcommCameraHardware::debugShowVideoFPS() const
-{
-    static int mFrameCount;
-    static int mLastFrameCount = 0;
-    static nsecs_t mLastFpsTime = 0;
-    static float mFps = 0;
-    mFrameCount++;
-    nsecs_t now = systemTime();
-    nsecs_t diff = now - mLastFpsTime;
-    if (diff > ms2ns(250)) {
-        mFps =  ((mFrameCount - mLastFrameCount) * float(s2ns(1))) / diff;
-        ALOGI("Video Frames Per Second: %.4f", mFps);
-        mLastFpsTime = now;
-        mLastFrameCount = mFrameCount;
-    }
-}
-
 void QualcommCameraHardware::receiveLiveSnapshot(uint32_t jpeg_size)
 {
     ALOGV("receiveLiveSnapshot E");
-#if DUMP_LIVESHOT_JPEG_FILE
-    int file_fd = open("/data/LiveSnapshot.jpg", O_RDWR | O_CREAT, 0777);
-    ALOGV("dumping live shot image in /data/LiveSnapshot.jpg");
-    if (file_fd < 0) {
-        ALOGE("cannot open file\n");
-    }
-    else
-    {
-        write(file_fd, (uint8_t *)mJpegLiveSnapMapped->data,jpeg_size);
-    }
-    close(file_fd);
-#endif
     Mutex::Autolock cbLock(&mCallbackLock);
     if (mDataCallback && (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE)) {
           mDataCallback(CAMERA_MSG_COMPRESSED_IMAGE, mJpegLiveSnapMapped ,data_counter,
@@ -6061,10 +5472,8 @@ bool QualcommCameraHardware::initRecord()
         ALOGE("Received following info for record mapped data:%p,handle:%p, size:%d,release:%p",
            mRecordMapped[cnt]->data ,mRecordMapped[cnt]->handle, mRecordMapped[cnt]->size, mRecordMapped[cnt]->release);
         }
-#if 1
         recordframes[cnt].buffer = (unsigned int)mRecordMapped[cnt]->data;
         recordframes[cnt].fd = mRecordfd[cnt];
-#endif
         recordframes[cnt].y_off = 0;
         recordframes[cnt].cbcr_off = CbCrOffset;
         recordframes[cnt].path = OUTPUT_TYPE_V;
@@ -8159,11 +7568,6 @@ sp<QualcommCameraHardware::MMCameraDL> QualcommCameraHardware::MMCameraDL::getIn
         instance = mmCamera;
     }
     return mmCamera;
-}
-
-bool QualcommCameraHardware::register_record_buffers(bool register_buffer) {
-    ALOGI("%s: (%d) E", __FUNCTION__, register_buffer);
-    return true;
 }
 
 static void receive_camframe_callback(struct msm_frame *frame)
