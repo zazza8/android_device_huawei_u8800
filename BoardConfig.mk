@@ -123,6 +123,8 @@ BOARD_RECOVERY_SWIPE := true
 TARGET_RECOVERY_FSTAB := device/huawei/u8800/fstab.qcom
 
 # Flags
+TARGET_NO_INITLOGO := true
+
 TARGET_GLOBAL_CFLAGS += -mfpu=neon -mfloat-abi=softfp
 TARGET_GLOBAL_CPPFLAGS += -mfpu=neon -mfloat-abi=softfp
 
