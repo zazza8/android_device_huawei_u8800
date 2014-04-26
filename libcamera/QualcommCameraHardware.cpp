@@ -702,7 +702,7 @@ static struct msm_frame * cam_frame_get_video()
            p = (struct msm_frame *)node->f;
            free (node);
        }
-       ALOGV("cam_frame_get_video... out = %x\n", p->buffer);
+       ALOGV("cam_frame_get_video... out = %lx\n", p->buffer);
     }
     return p;
 }
@@ -822,7 +822,7 @@ static void cam_frame_post_video (struct msm_frame *p)
     pthread_mutex_unlock(&(g_busy_frame_queue.mut));
     pthread_cond_signal(&(g_busy_frame_queue.wait));
 
-    ALOGV("cam_frame_post_video... out = %x\n", p->buffer);
+    ALOGV("cam_frame_post_video... out = %lx\n", p->buffer);
 
     return;
 }
@@ -2234,7 +2234,7 @@ bool QualcommCameraHardware::initImageEncodeParameters(int size)
     setExifInfo();
 
     if (mUseJpegDownScaling) {
-      ALOGV("initImageEncodeParameters: update main image", __func__);
+      ALOGV("initImageEncodeParameters: update main image");
       mImageEncodeParms.output_picture_width = mActualPictWidth;
       mImageEncodeParms.output_picture_height = mActualPictHeight;
     }
