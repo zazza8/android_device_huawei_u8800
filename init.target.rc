@@ -37,6 +37,11 @@ on init
     chmod 0664 /sys/class/timed_output/vibrator/voltage_level
     restorecon /sys/class/timed_output/vibrator/voltage_level
 
+    # HW Props
+    chown system system /sys/hwprops/btmac
+    chown system system /sys/hwprops/wlanmac
+    chown system system /sys/hwprops/reset
+
 on post-fs-data
     mkdir /data/misc/hwprops 0770 system system
     mkdir /data/misc/sensors 0770 system system
