@@ -43,28 +43,6 @@ static void usage(void)
 }
 
 #define CUSTOM_PROPS_DIR "/data/misc/hwprops/"
-static int get_custom_wlan_mac(uint8_t *wlanmac)
-{
-	char buffer[18];
-
-	int fd = open(CUSTOM_PROPS_DIR "wlanmac", O_RDONLY);
-	if (fd < 0) {
-		return -1;
-	}
-
-	read(fd, buffer, 18);
-
-	if (sscanf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X",
-		(unsigned int *)&wlanmac[0], (unsigned int *)&wlanmac[1],
-		(unsigned int *)&wlanmac[2], (unsigned int *)&wlanmac[3],
-		(unsigned int *)&wlanmac[4], (unsigned int *)&wlanmac[5]) != 6) {
-		close(fd);
-		return -1;
-	}
-
-	close(fd);
-	return 0;
-}
 
 static int get_custom_bt_mac(uint8_t *btmac)
 {
@@ -77,10 +55,31 @@ static int get_custom_bt_mac(uint8_t *btmac)
 
 	read(fd, buffer, 18);
 
-	if (sscanf(buffer, "%02X:%02X:%02X:%02X:%02X:%02X",
-		(unsigned int *)&btmac[0], (unsigned int *)&btmac[1],
-		(unsigned int *)&btmac[2], (unsigned int *)&btmac[3],
-		(unsigned int *)&btmac[4], (unsigned int *)&btmac[5]) != 6) {
+	if (sscanf(buffer, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
+		&btmac[0], &btmac[1], &btmac[2],
+		&btmac[3], &btmac[4], &btmac[5]) != 6) {
+		close(fd);
+		return -1;
+	}
+
+	close(fd);
+	return 0;
+}
+
+static int get_custom_wlan_mac(uint8_t *wlanmac)
+{
+	char buffer[18];
+
+	int fd = open(CUSTOM_PROPS_DIR "wlanmac", O_RDONLY);
+	if (fd < 0) {
+		return -1;
+	}
+
+	read(fd, buffer, 18);
+
+	if (sscanf(buffer, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
+		&wlanmac[0], &wlanmac[1], &wlanmac[2],
+		&wlanmac[3], &wlanmac[4], &wlanmac[5]) != 6) {
 		close(fd);
 		return -1;
 	}
