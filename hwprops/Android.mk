@@ -29,7 +29,6 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/libhwprops/include
 
 LOCAL_SHARED_LIBRARIES := libcutils
-LOCAL_SHARED_LIBRARIES += libhwprops
 
 include $(BUILD_EXECUTABLE)
 

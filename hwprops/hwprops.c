@@ -19,27 +19,23 @@
 #define LOG_TAG "hwprops"
 
 #include <fcntl.h>
-#include <inttypes.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <private/android_filesystem_config.h>
 
 #include <cutils/log.h>
 #include <cutils/properties.h>
 
-#include <libhwprops/hwprops.h>
+#define HWPROPS_DIR		"/sys/hwprops/"
+#define HWPROPS_WLANMAC		HWPROPS_DIR "wlanmac"
+#define HWPROPS_MAC		HWPROPS_DIR "btmac"
 
 static void usage(void)
 {
 	printf("Usage:\n");
-	printf("\t-wlanmac: Assigns ${wlan.driver.arg} with correct"
-		"parameter.\n");
+	printf("\t-wlanmac: Writes the MAC address to %s.\n", HWPROPS_WLANMAC);
 	printf("\t-btmac: Writes the MAC address to ${ro.bt.bdaddr_path}.\n");
 
 	printf("Custom Addresses (/data/misc/hwprops)\n");
-	printf("\t-wlanmac: if saved, overrides NV.\n");
-	printf("\t-btmac: if saved, overrides NV.\n");
+	printf("\t-wlanmac: WLAN MAC address.\n");
+	printf("\t-btmac: BT MAC address.\n");
 }
 
 #define CUSTOM_PROPS_DIR "/data/misc/hwprops/"
@@ -93,23 +89,27 @@ static void set_wlan_mac(void)
 	int ret;
 	uint8_t wlanmac[6];
 	char wlan_addr[19];
-	char wlan_arg_prop[PROPERTY_VALUE_MAX];
+	int fd;
+	int size;
 
 	ret = get_custom_wlan_mac(wlanmac);
-	if (!ret) {
-		ALOGD("Using custom wlan mac\n");
-	} else {
-		ALOGD("Using NV wlan mac\n");
-		if (hwprops_get_wlan_mac(wlanmac))
-			return;
+	if (ret) {
+		printf("WLAN MAC not stored/invalid.\n");
+		return;
 	}
 
-	sprintf(wlan_addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+	size = sprintf(wlan_addr, "%02X:%02X:%02X:%02X:%02X:%02X",
 		wlanmac[0], wlanmac[1], wlanmac[2],
 		wlanmac[3], wlanmac[4], wlanmac[5]);
 
-	sprintf(wlan_arg_prop, "mac_param=%s", wlan_addr);
-	property_set("wlan.driver.arg", wlan_arg_prop);
+	fd = open("/sys/hwprops/wlanmac", O_WRONLY);
+	if (fd < 0)
+		return;
+
+	printf("Writing custom WLAN MAC address.\n");
+
+	write(fd, wlan_addr, size);
+	close(fd);
 }
 
 static void set_bt_mac(void)
@@ -122,12 +122,9 @@ static void set_bt_mac(void)
 	int size;
 
 	ret = get_custom_bt_mac(btmac);
-	if (!ret) {
-		ALOGD("Using custom bt mac\n");
-	} else {
-		ALOGD("Using NV bt mac\n");
-		if (hwprops_get_bt_mac(btmac))
-			return;
+	if (ret) {
+		printf("BT MAC not stored/invalid.\n");
+		return;
 	}
 
 	size = sprintf(bt_addr, "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -137,18 +134,12 @@ static void set_bt_mac(void)
 	/* Bluetooth MAC address is stored in a file. If the file path is set,
 	 * write the MAC address. */
 	if (property_get("ro.bt.bdaddr_path", bt_path_prop, NULL)) {
-		fd = open(bt_path_prop, O_RDWR | O_CREAT,
-			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-		if (fd < 0) {
-			printf("Failed to open %s\n", bt_path_prop);
+		fd = open(bt_path_prop, O_WRONLY);
+		if (fd < 0)
 			return;
-		}
+		printf("Writing custom BT MAC address.\n");
 
 		write(fd, bt_addr, size);
-
-		/* Set same chown permissions as bt_config.xml */
-		fchown(fd, AID_BLUETOOTH, AID_NET_BT_STACK);
-
 		close(fd);
 	}
 
@@ -158,8 +149,6 @@ int main(int argc, char *argv[])
 {
 	int i;
 
-	hwprops_init();
-
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-wlanmac"))
 			set_wlan_mac();
@@ -167,7 +156,6 @@ int main(int argc, char *argv[])
 			set_bt_mac();
 		else {
 			usage();
-			hwprops_exit();
 			return 0;
 		}
 	}
@@ -177,6 +165,5 @@ int main(int argc, char *argv[])
 		set_bt_mac();
 	}
 
-	hwprops_exit();
 	return 0;
 }
