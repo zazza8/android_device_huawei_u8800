@@ -43,7 +43,7 @@ public class Startup extends BroadcastReceiver {
         btPower.setPower(integerValue);
 
         booleanValue = prefs.getBoolean(SettingsFragment.PREF_HOST, false);
-        if (booleanValue) { /* Only write new value if host is enabled. */
+        if (booleanValue != usbHost.getEnabled()) {
             usbHost.setEnabled(booleanValue);
             usbHost.showNotification(context);
         }
