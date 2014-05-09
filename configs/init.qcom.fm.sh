@@ -94,10 +94,10 @@ exit_code_fm_qsoc_patches=$?
 
 case $exit_code_fm_qsoc_patches in
    0)
-	logi "FM QSoC calibration and firmware download succeeded"
+  logi "FM QSoC calibration and firmware download succeeded"
    ;;
   *)
-	failed "FM QSoC firmware download and/or calibration failed" $exit_code_fm_qsoc_patches
+  failed "FM QSoC firmware download and/or calibration failed" $exit_code_fm_qsoc_patches
    ;;
 esac
 
