@@ -28,16 +28,12 @@ public class Startup extends BroadcastReceiver {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
-        ForceMic forceMic = new ForceMic();
         BTPower btPower = new BTPower();
         USBHost usbHost = new USBHost();
         USBCurrent usbCurrent = new USBCurrent();
 
         Boolean booleanValue;
         Integer integerValue;
-
-        booleanValue = prefs.getBoolean(SettingsFragment.PREF_FORCE_MIC, false);
-        forceMic.setEnabled(booleanValue);
 
         integerValue = Integer.valueOf(prefs.getString(SettingsFragment.PREF_BT_POWER, "1"));
         btPower.setPower(integerValue);
