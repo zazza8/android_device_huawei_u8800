@@ -43,4 +43,24 @@
             android:summary="@string/pref_sensors_mag_calib_summary"
             android:enabled="false" />
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_hwaddr_title" >
+        <SwitchPreference
+            android:key="pref_hwaddr_custom"
+            android:title="@string/pref_hwaddr_custom_title"
+            android:summary="@string/pref_hwaddr_custom_summary"
+            android:defaultValue="false"
+            android:enabled="false" />
+        <com.blefish.ideosx5settings.EditTextPreferenceSummary
+            android:key="pref_hwaddr_bt"
+            android:title="@string/pref_hwaddr_bt_title"
+            android:defaultValue="00:11:22:33:44:55"
+            android:enabled="false" />
+        <com.blefish.ideosx5settings.EditTextPreferenceSummary
+            android:key="pref_hwaddr_wlan"
+            android:title="@string/pref_hwaddr_wlan_title"
+            android:defaultValue="00:11:22:33:44:55"
+            android:enabled="false" />
+    </PreferenceCategory>
 </PreferenceScreen>

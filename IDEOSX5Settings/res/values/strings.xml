@@ -40,4 +40,12 @@
 
     <string name="pref_sensors_mag_calib_title">Magnetic sensor calibration</string>
     <string name="pref_sensors_mag_calib_summary">Delete previous calibration</string>
+
+
+    <string name="pref_hwaddr_title">HW Addresses</string>
+
+    <string name="pref_hwaddr_custom_title">Custom HW addresses</string>
+    <string name="pref_hwaddr_custom_summary">Use custom BT/WLAN MAC address</string>
+    <string name="pref_hwaddr_bt_title">Bluetooth MAC Address</string>
+    <string name="pref_hwaddr_wlan_title">Wi-Fi MAC Address</string>
 </resources>
